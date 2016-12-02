@@ -1,0 +1,40 @@
+{
+  "name": "joosugi",
+  "version": "0.1.0",
+  "description": "A IIIF annotation explorer",
+  "scripts": {
+    "test": "karma start --singleRun",
+    "clean": "rm -rf dist/*",
+    "build": "npm run clean && webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gigamorph/joosugi.git"
+  },
+  "keywords": [
+    "IIIF",
+    "annotation"
+  ],
+  "author": "Seong-June Kim <seong-june.kim@yale.edu>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gigamorph/joosugi/issues"
+  },
+  "homepage": "https://github.com/gigamorph/joosugi#readme",
+  "devDependencies": {
+    "babel-core": "^6.18.2",
+    "babel-loader": "^6.2.7",
+    "babel-preset-es2015": "^6.18.0",
+    "babel-preset-es2017": "^6.16.0",
+    "banner-webpack-plugin": "^0.1.3",
+    "chai": "^3.5.0",
+    "karma": "^1.3.0",
+    "karma-coverage": "^1.1.1",
+    "karma-mocha": "^1.2.0",
+    "karma-sourcemap-loader": "^0.3.7",
+    "karma-webpack": "^1.8.0",
+    "mocha": "^3.1.2",
+    "npm-version": "^1.1.0",
+    "webpack": "^1.13.3"
+  }
+}
