@@ -4,7 +4,7 @@ export default {
    * @returns {Array} IDs of layers associated with the annotation
    */
   getLayers: function(annotation) {
-    const layers = annotation.layer;
+    const layers = annotation.layer || annotation.layerId; //TODO remove layerId after refactoring yale-mirador
     return layers instanceof Array ? layers : [layers];
   },
   
@@ -192,13 +192,17 @@ export default {
   },
 
   /**
-   * Merge annotation's target ("on" attribute) with a new "on" attribute (sourceTarget).
+   * Add target ("on" attribute) to annotation
    */ 
-  mergeTargets: function(annotation, sourceTarget) {
-    if (annotation.on instanceof Array) {
-      annotation.on.push(sourceTarget);
+  addTarget: function(annotation, target) {
+    if (annotation.on) {
+      if (annotation.on instanceof Array) {
+        annotation.on.push(target);
+      } else {
+        annotation.on = [annotation.on, target];
+      }
     } else {
-      annotation.on = [annotation.on, sourceTarget];
+      annotation.on = [target];
     }
   },
   
