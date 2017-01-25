@@ -2,12 +2,10 @@
 
 Joosugi aims to be a library that acts as a [IIIF](http://iiif.io)-compliant interface to annotation data store(s).
 
-## Build
-```bash
-npm install
-npm run build
+## Install
 ```
-Will generate `dist/joosugi.js`
+npm install joosugi
+```
 
 ## Use
 
@@ -16,3 +14,8 @@ var model = new joosugi.AnnotationExplorer({
   dataSource: dataSource
 });
 ```
+
+## Development
+
+See [README-dev.md](README-dev.md) 
+
