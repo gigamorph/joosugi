@@ -1,3 +1,4 @@
+import AnnotationToc from './annotation-toc';
 import annoUtil from './annotation-util';
 
 export default class AnnotationExplorer {
@@ -6,15 +7,16 @@ export default class AnnotationExplorer {
       dataSource: null,
       tocSpec: null
     }, options);
+    this.AnnotationToc = null;
   }
 
   getLayers() {
     return this.options.dataSource.getLayers();
   }
 
-  getAnnotations(canvasId) {
-    console.log('AnnotationExplorer#getAnnotations canvasId:', canvasId);
-    return this.options.dataSource.getAnnotations(canvasId);
+  getAnnotations(options) {
+    console.log('AnnotationExplorer#getAnnotations options:', options);
+    return this.options.dataSource.getAnnotations(options);
   }
 
   createAnnotation(annotation) {
@@ -36,5 +38,10 @@ export default class AnnotationExplorer {
 
   getAnnotationToc() {
     return this.annotationToc;
+  }
+  
+  reloadAnnotationToc(spec, annotations) {
+    this.annotationToc = new AnnotationToc(spec, annotations);
+    console.log('AnnotationExplorer#reloadAnnotationToc toc:', this.annotationToc.annoHierarchy);
   }
 }
