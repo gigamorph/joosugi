@@ -1,5 +1,5 @@
 export default {
-  
+
   /**
    * @returns {Array} IDs of layers associated with the annotation
    */
@@ -19,33 +19,33 @@ export default {
    * Returns content of first text (non-tag) resource it finds from the annotation.
    */
   getText: function(annotation) {
-    var content = null;
-    var resource = annotation.resource;
-    
+    let content = null;
+    let resource = annotation.resource;
+
     if (!(resource instanceof Array || typeof resource === 'object')) {
       return null;
     }
     if (!(resource instanceof Array)) {
       resource = [resource];
     }
-    jQuery.each(resource, function(index, value) {
-      if (value['@type'] === 'dctypes:Text') {
-        content = value.chars;
-        return false;
+    for (let item of resource) {
+      if (item['@type'] === 'dctypes:Text') {
+        content = item.chars;
+        break;
       }
-    });
+    }
     return content;
   },
   
   getTags: function(annotation) {
-    var tags = [];
+    const tags = [];
 
-    if (jQuery.isArray(annotation.resource)) {
-      jQuery.each(annotation.resource, function(index, value) {
+    if (annotation.resource instanceof Array) {
+      for (let item of annotation.resource) {
         if (value['@type'] === "oa:Tag") {
-          tags.push(value.chars);
+          tags.push(item.chars);
         }
-      });
+      }
     }
     return tags;
   },
@@ -76,9 +76,9 @@ export default {
   // For an annotation of annotation,
   // follow the "on" relation until the eventual target annotation if found.
   findFinalTargetAnnotation: function(annotation, annotations) {
-    var nextId = '';
-    var nextAnno = annotation;
-    var targetAnno = annotation;
+    let nextId = '';
+    let nextAnno = annotation;
+    let targetAnno = annotation;
     
     while(nextAnno) {
       //console.log('nextAnno: ');
@@ -87,13 +87,13 @@ export default {
       if (nextAnno.on['@type'] === 'oa:Annotation') {
         nextId = nextAnno.on.full;
         nextAnno = null;
-        jQuery.each(annotations, function(index, anno) {
+        for (let anno of annotations) {
           if (anno['@id'] === nextId) {
             targetAnno = anno;
             nextAnno = anno;
-            return false;
+            break;
           }
-        });
+        }
       } else {
         nextAnno = null;
       }
@@ -102,9 +102,9 @@ export default {
   },
   
   findTargetAnnotation: function(annotation, annotations) {
-    var nextId = '';
-    var nextAnno = annotation;
-    var targetAnno = annotation;
+    let nextId = '';
+    let nextAnno = annotation;
+    let targetAnno = annotation;
     
     while(nextAnno) {
       //console.log('nextAnno: ');
@@ -113,13 +113,13 @@ export default {
       if (nextAnno.on['@type'] === 'oa:Annotation') {
         nextId = nextAnno.on.full;
         nextAnno = null;
-        jQuery.each(annotations, function(index, anno) {
+        for (let anno of annotations) {
           if (anno['@id'] === nextId) {
             targetAnno = anno;
             nextAnno = anno;
-            return false;
+            break;
           }
-        });
+        }
       } else {
         nextAnno = null;
       }
@@ -161,7 +161,7 @@ export default {
    * and which belong to the layer with "layerId".
    */
   findTargetAnnotations: function(annotation, annotationsList, layerId) {
-    var targetId = annotation.on.full;
+    const targetId = annotation.on.full;
     return annotationsList.filter(function(currentAnno) {
       return currentAnno.layerId === layerId && currentAnno['@id'] === targetId;
     });
@@ -173,7 +173,7 @@ export default {
    */
   findTargetingAnnotations: function(annotation, annotationsList, layerId) {
     return annotationsList.filter(function(currentAnno) {
-      var targetId = currentAnno.on.full;
+      const targetId = currentAnno.on.full;
       return currentAnno.layerId === layerId && annotation['@id'] === targetId;
     });
   },
