@@ -52,8 +52,7 @@ export default class AnnotationToc {
   }
 
   init(annotations) {
-    console.log('Toc#init spec: ' + this.spec);
-    console.dir(this.spec);
+    console.log('Toc#init spec: ', this.spec);
 
     this.annoHierarchy = this.newNode(null, null); // root node
 
@@ -71,8 +70,8 @@ export default class AnnotationToc {
     let node = this.annoHierarchy;
     
     for (let tag of tags) {
-      if (!node) { 
-        break; 
+      if (!node) {
+        break;
       }
       node = node.childNodes[tag];
     }
@@ -89,11 +88,13 @@ export default class AnnotationToc {
    */
   initTagWeights() {
     var _this = this;
-    jQuery.each(this.spec.nodeSpecs, function(rowIndex, row) {
-      jQuery.each(row, function(index, nodeSpec) {
+    //jQuery.each(this.spec.nodeSpecs, function(rowIndex, row) {
+    for (let row of this.spec.nodeSpecs) {
+      //jQuery.each(row, function(index, nodeSpec) {
+      for (let [index, nodeSpec] of row.entries()) {
         _this.tagWeights[nodeSpec.tag] = index;
-      });
-    });
+      }
+    }
   }
   
   parse() {
@@ -111,19 +112,20 @@ export default class AnnotationToc {
     var _this = this;
     var remainder = [];
     
-    jQuery.each(annotations, function(index, annotation) {
+    for (let annotation of annotations) {
       var tags = annoUtil.getTags(annotation);
       var success = _this.buildChildNodes(annotation, tags, 0, _this.annoHierarchy);
+
       if (!success) {
         remainder.push(annotation);
       }
-    });
+    }
     return remainder;
   }
   
   addRemainingAnnotations(annotations) {
     var _this = this;
-    jQuery.each(annotations, function(index, annotation) {
+    for (let annotation of annotations) {
       var targetAnno = annoUtil.findFinalTargetAnnotation(annotation, _this.annotations);
       if (targetAnno) {
         var node = _this.annoToNodeMap[targetAnno['@id']];
@@ -135,11 +137,10 @@ export default class AnnotationToc {
           _this._unassigned.push(annotation);
         }
       } else {
-        console.log('WARNING Toc#addRemainingAnnotations orphan');
-        console.dir(annotation);
+        console.log('WARNING Toc#addRemainingAnnotations orphan', annotation);
         _this._unassigned.push(annotation);
       }
-    });
+    }
   }
   
   /**
@@ -151,9 +152,8 @@ export default class AnnotationToc {
    * @return {boolean} true if the annotation was set to be a TOC node, false if not.
    */
   buildChildNodes(annotation, tags, rowIndex, parent) {
-    //console.log('ParsedAnnotations#buildNode rowIndex: ' + rowIndex + ', anno:');
-    //console.dir(annotation);
-    
+    //console.log('ParsedAnnotations#buildNode rowIndex: ' + rowIndex + ', anno:', annotation);
+
     var currentNode = null;
 
     if (rowIndex >= this.spec.nodeSpecs.length) { // no more levels to explore in the TOC structure
@@ -166,9 +166,9 @@ export default class AnnotationToc {
         return true;
       }
     }
-    
+
     var nodeSpec = this.tagInSpecs(tags, this.spec.nodeSpecs[rowIndex]);
-    
+
     if (nodeSpec) { // one of the tags belongs to the corresponding level of the pre-defined tag hierarchy
       var tag = nodeSpec.tag;
       var annoHierarchy = this.annoHierarchy;
@@ -176,7 +176,9 @@ export default class AnnotationToc {
       if (!parent.childNodes[tag]) {
         parent.childNodes[tag] = this.newNode(nodeSpec, parent);
       }
+
       currentNode = parent.childNodes[tag];
+
       if (parent.isRoot) {
         currentNode.cumulativeLabel = currentNode.spec.short;
       } else {
@@ -205,17 +207,17 @@ export default class AnnotationToc {
    */
   tagInSpecs(tags, nodeSpecs) {
     var match = null;
-    jQuery.each(tags, function(index, tag) {
-      jQuery.each(nodeSpecs, function(listIndex, nodeSpec) {
+    for (let tag of tags) {
+      for (let nodeSpec of nodeSpecs) {
         if (tag === nodeSpec.tag) {
           match = nodeSpec;
-          return false;
+          break;
         }
-      });
-      if (match) {
-        return false;
       }
-    });
+      if (match) {
+        break;
+      }
+    }
     return match;
   }
 
@@ -244,42 +246,39 @@ export default class AnnotationToc {
   getNodeFromTags(tags) {
     var node = this.annoHierarchy;
     
-    jQuery.each(tags, function(index, tag) {
+    for (let tag of tags) {
       node = node.childNodes[tag];
       if (!node) {
-        return false;
+        break;
       }
-    });
+    }
     return node;
   }
-  
+
   matchHierarchy(annotation, tags) {
     var node = this.getNodeFromTags(tags);
     return node ? this.matchNode(annotation, node) : false;
   }
-  
+
   matchNode(annotation, node) {
     var _this = this;
     var matched = false;
-    
-    //console.log('Node: ');
-    //console.dir(node);
-    
+
     if (node.annotation['@id'] === annotation['@id']) {
       return true;
     }
-    jQuery.each(node.childAnnotations, function(index, value) {
-      if (value['@id'] === annotation['@id']) {
+    for (let anno of node.childAnnotations) {
+      if (anno['@id'] === annotation['@id']) {
         matched = true;
-        return false;
+        break;
       }
-    });
-    jQuery.each(node.childNodes, function(index, childNode) {
+    }
+    for (let childNode of node.childNodes) {
       if (_this.matchNode(annotation, childNode)) {
         matched = true;
-        return false;
+        break;
       }
-    });
+    }
     return matched;
   }
   
@@ -309,10 +308,10 @@ export default class AnnotationToc {
       return _this.tagWeights[a] - _this.tagWeights[b];
     });
     
-    jQuery.each(sortedTags, function(index, tag) {
+    for (let tag of sortedTags) {
       let childNode = node.childNodes[tag];
       callback(childNode);
       _this.visit(childNode, callback);
-    });
+    }
   }
 }

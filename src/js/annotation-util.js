@@ -42,7 +42,7 @@ export default {
 
     if (annotation.resource instanceof Array) {
       for (let item of annotation.resource) {
-        if (value['@type'] === "oa:Tag") {
+        if (item['@type'] === "oa:Tag") {
           tags.push(item.chars);
         }
       }
@@ -81,8 +81,7 @@ export default {
     let targetAnno = annotation;
     
     while(nextAnno) {
-      //console.log('nextAnno: ');
-      //console.dir(nextAnno);
+      //console.log('nextAnno:', nextAnno);
 
       if (nextAnno.on['@type'] === 'oa:Annotation') {
         nextId = nextAnno.on.full;
