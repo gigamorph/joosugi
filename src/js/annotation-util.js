@@ -7,14 +7,14 @@ export default {
     const layers = annotation.layer || annotation.layerId; //TODO remove layerId after refactoring yale-mirador
     return layers instanceof Array ? layers : [layers];
   },
-  
+
   /**
    * @returns {boolean} true if the annotation targets a canvas fragment, not another annotation.
    */
   isAnnoOnCanvas: function(annotation) {
     return annotation.on['@type'] !== 'oa:Annotation';
   },
-  
+
   /**
    * Returns content of first text (non-tag) resource it finds from the annotation.
    */
@@ -36,7 +36,7 @@ export default {
     }
     return content;
   },
-  
+
   getTags: function(annotation) {
     const tags = [];
 
@@ -49,10 +49,10 @@ export default {
     }
     return tags;
   },
-  
+
   hasTags: function(annotation, tags) {
     const annoTags = this.getTags(annotation);
-    
+
     for (let i = 0; i < tags.length; ++i) {
       let found = false;
       for (let j = 0; j < annoTags.length; ++j) {
@@ -67,19 +67,19 @@ export default {
     }
     return true;
   },
-  
+
   getTargetSelectorValue: function(annotation) {
     const selector =  annotation.on.selector;
     return selector ? selector.value : null;
   },
-  
+
   // For an annotation of annotation,
   // follow the "on" relation until the eventual target annotation if found.
   findFinalTargetAnnotation: function(annotation, annotations) {
     let nextId = '';
     let nextAnno = annotation;
     let targetAnno = annotation;
-    
+
     while(nextAnno) {
       //console.log('nextAnno:', nextAnno);
 
@@ -99,12 +99,12 @@ export default {
     }
     return targetAnno;
   },
-  
+
   findTargetAnnotation: function(annotation, annotations) {
     let nextId = '';
     let nextAnno = annotation;
     let targetAnno = annotation;
-    
+
     while(nextAnno) {
       //console.log('nextAnno: ');
       //console.dir(nextAnno);
@@ -125,11 +125,11 @@ export default {
     }
     return targetAnno;
   },
-  
+
   getTargetCanvasIds(annotation, options) {
     const canvasIds = [];
     let targetAnno = null;
-    
+
     if (annotation.on['@type'] === 'oa:Annotation') {
       targetAnno = this.findFinalTargetAnnotation(annotation, options.annotations);
     } else {
@@ -154,9 +154,9 @@ export default {
     }
     return canvasIds;
   },
-  
+
   /**
-   * Find annotations from "annotationsList" which this "annotation" annotates 
+   * Find annotations from "annotationsList" which this "annotation" annotates
    * and which belong to the layer with "layerId".
    */
   findTargetAnnotations: function(annotation, annotationsList, layerId) {
@@ -176,7 +176,7 @@ export default {
       return currentAnno.layerId === layerId && annotation['@id'] === targetId;
     });
   },
-  
+
   /**
    * Find annotations from "annotationsList" that belong to the same TOC node
    * and which belong to the layer with "layerId".
@@ -192,7 +192,7 @@ export default {
 
   /**
    * Add target ("on" attribute) to annotation
-   */ 
+   */
   addTarget: function(annotation, target) {
     if (annotation.on) {
       if (annotation.on instanceof Array) {
@@ -204,23 +204,23 @@ export default {
       annotation.on = [target];
     }
   },
-  
+
   /**
    * XXX this version of mergeTargets will probably have to be removed
-   * because SVG to SVG merge will likely turn out to be illegal against 
-   * the IIIF spec. The selector SVG of a target should always contains 
+   * because SVG to SVG merge will likely turn out to be illegal against
+   * the IIIF spec. The selector SVG of a target should always contains
    * a single path and if multiple targets exist for an annotation,
    * the "on" field should be an array of targets.
    *
    * Merge annotation's target ("on" attribute) with a new "on" attribute (sourceTarget).
-   */ 
+   */
   mergeTargetsOld: function(annotation, sourceTarget) {
     const destTarget = annotation.on;
     let destCanvasId = destTarget.full;
     const sourceCanvasId = sourceTarget.full;
 
     if (destTarget instanceof Array) { // (destination) annotation has (possibly) multiple targets
-      const targetsWithSameCanvasId = destTarget.filter(function(on) { 
+      const targetsWithSameCanvasId = destTarget.filter(function(on) {
         return on.full === sourceCanvasId;
       });
       if (targetsWithSameCanvasId.length === 1) { // there's a destination target on the same canvas as the source target
