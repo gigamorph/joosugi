@@ -6,8 +6,6 @@ var path = require('path');
 module.exports = function(config) {
   config.set({
 
-    logLevel: config.LOG_DEBUG,
-
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '',
 
