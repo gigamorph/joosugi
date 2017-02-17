@@ -12,8 +12,8 @@ export default class AnnotationToc {
     /*
      * Spec is a JSON passed from outside (an array of arrays).
      * It defines the tags to be used to define the hiearchy.
-     * It is different from "ranges" because 
-     * it is used to define a strucutre of annotations in a single canvas 
+     * It is different from "ranges" because
+     * it is used to define a strucutre of annotations in a single canvas
      * while ranges are used to define a structure of canvases in a sequence.
      * For example, the first array could list tags for sections of a story
      * and the second one could list tags for sub-sections.
@@ -26,13 +26,13 @@ export default class AnnotationToc {
     /**
      * This can be considered the output of parse,
      * while "this.spec" and "annotations" are the input.
-     * 
+     *
      * Each node is an object:
      * {
      *   spec: AN_OBJECT, // spec object from this.spec, with label, short, tag attributes
      *   annotation: AN_OBJECT, // annotation
      *   layerIds: A_SET, // set of layer IDs for annotations that belong to this node or its children
-     *   cumulativeLabel: A_STRING, // concatenation of short labels inherited from the parent nodes 
+     *   cumulativeLabel: A_STRING, // concatenation of short labels inherited from the parent nodes
      *   cumulativeTags: [], // list of tags for this node and its ancestors
      *   childNodes: AN_OBJECT, // child TOC nodes as a hashmap on tags
      *   childAnnotations: AN_ARRAY, // non-TOC-node annotations that targets this node
@@ -46,7 +46,7 @@ export default class AnnotationToc {
      * Annotations that do not belong to the ToC structure.
      */
     this._unassigned = [];
-    
+
     this.annoToNodeMap = {}; // key: annotation ID, value: node in annoHierarchy;
     this.init();
   }
@@ -68,7 +68,7 @@ export default class AnnotationToc {
   getNode() {
     const tags = Array.from(arguments);
     let node = this.annoHierarchy;
-    
+
     for (let tag of tags) {
       if (!node) {
         break;
@@ -77,12 +77,12 @@ export default class AnnotationToc {
     }
     return (node === this.annoHierarchy) ? null : node;
   }
-  
+
   findNodeForAnnotation(annotation) {
     const targetAnno = annoUtil.findFinalTargetAnnotation(annotation, this.annotations);
     return targetAnno ? this.annoToNodeMap[targetAnno['@id']] : null;
   }
-  
+
   /**
    * Assign weights to tags according to their position in the array.
    */
@@ -96,14 +96,14 @@ export default class AnnotationToc {
       }
     }
   }
-  
+
   parse() {
     // First pass
     var remainingAnnotations = this.addTaggedAnnotations(this.annotations);
     // Second pass
     this.addRemainingAnnotations(remainingAnnotations);
   }
-  
+
   /**
    * Build a TOC structure
    * @return An array of annotations that are NOT assigned to a TOC node.
@@ -111,7 +111,7 @@ export default class AnnotationToc {
   addTaggedAnnotations(annotations) {
     var _this = this;
     var remainder = [];
-    
+
     for (let annotation of annotations) {
       var tags = annoUtil.getTags(annotation);
       var success = _this.buildChildNodes(annotation, tags, 0, _this.annoHierarchy);
@@ -122,7 +122,7 @@ export default class AnnotationToc {
     }
     return remainder;
   }
-  
+
   addRemainingAnnotations(annotations) {
     var _this = this;
     for (let annotation of annotations) {
@@ -142,11 +142,11 @@ export default class AnnotationToc {
       }
     }
   }
-  
+
   /**
    * Recursively builds the TOC structure.
    * @param {object} annotation Annotation to be assigned to the parent node
-   * @param {string[]} tags 
+   * @param {string[]} tags
    * @param {number} rowIndex Index of this.annoHierarchy
    * @param {object} parent Parent node
    * @return {boolean} true if the annotation was set to be a TOC node, false if not.
@@ -172,7 +172,7 @@ export default class AnnotationToc {
     if (nodeSpec) { // one of the tags belongs to the corresponding level of the pre-defined tag hierarchy
       var tag = nodeSpec.tag;
       var annoHierarchy = this.annoHierarchy;
-      
+
       if (!parent.childNodes[tag]) {
         parent.childNodes[tag] = this.newNode(nodeSpec, parent);
       }
@@ -197,7 +197,7 @@ export default class AnnotationToc {
       }
     }
   }
-  
+
   /**
    * A tag object is an object in this.tagHierarcy that represents a tag.
    *
@@ -242,10 +242,10 @@ export default class AnnotationToc {
       };
     }
   }
-  
+
   getNodeFromTags(tags) {
     var node = this.annoHierarchy;
-    
+
     for (let tag of tags) {
       node = node.childNodes[tag];
       if (!node) {
@@ -273,7 +273,7 @@ export default class AnnotationToc {
         break;
       }
     }
-    for (let childNode of node.childNodes) {
+    for (let childNode of Object.values(node.childNodes)) {
       if (_this.matchNode(annotation, childNode)) {
         matched = true;
         break;
@@ -281,19 +281,19 @@ export default class AnnotationToc {
     }
     return matched;
   }
-  
+
   registerLayerWithNode(node, layerId) {
     node.layerIds.add(layerId);
   }
-  
+
   unassigned() {
     return this._unassigned;
   }
-  
+
   numUnassigned() {
     return this._unassigned.length;
   }
-  
+
   /**
    * Traverses the Toc structure and calls visitCallback() for each node.
    * @param {function} visitCallback
@@ -301,13 +301,13 @@ export default class AnnotationToc {
   walk(visitCallback) {
     this.visit(this.annoHierarchy, visitCallback);
   }
-  
+
   visit(node, callback) {
     const _this = this;
     const sortedTags = Object.keys(node.childNodes).sort(function(a, b) {
       return _this.tagWeights[a] - _this.tagWeights[b];
     });
-    
+
     for (let tag of sortedTags) {
       let childNode = node.childNodes[tag];
       callback(childNode);

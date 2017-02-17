@@ -22,15 +22,17 @@ export default class AnnotationExplorer {
   createAnnotation(annotation) {
     return this.options.dataSource.createAnnotation(annotation);
   }
-  
+
   updateAnnotation(annotation) {
     return this.options.dataSource.updateAnnotation(annotation);
   }
-  
-  deleteAnnotation(annotation) {
-    return this.options.dataSource.deleteAnnotation(annotation);
+
+  deleteAnnotation(annotationId) {
+    console.log('AnnotationExplorer#deleteAnnotation annotationId:', annotationId);
+    const promise = this.options.dataSource.deleteAnnotation(annotationId);
+    return promise;
   }
-  
+
   updateAnnotationListOrder(canvasId, layerId, annoIds) {
     console.log('AnnotationExplorer#updateAnnotationListOrder');
     return this.options.dataSource.updateAnnotationListOrder(canvasId, layerId, annoIds);
@@ -39,7 +41,7 @@ export default class AnnotationExplorer {
   getAnnotationToc() {
     return this.annotationToc;
   }
-  
+
   reloadAnnotationToc(spec, annotations) {
     this.annotationToc = new AnnotationToc(spec, annotations);
     console.log('AnnotationExplorer#reloadAnnotationToc toc:', this.annotationToc.annoHierarchy);
