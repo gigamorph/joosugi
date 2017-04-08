@@ -252,7 +252,28 @@ export default class AnnotationToc {
         break;
       }
     }
-    return node;
+    return node.isRoot ? null : node;
+  }
+
+  /**
+   * Return an array of tags for the node to which the annotation belongs
+   * @param {string} annotationId
+   */
+  getTagsFromAnnotationId(annotationId) {
+    var tags = [];
+
+    this.walk((node) => {
+      for (let anno of [node.annotation].concat(node.childAnnotations)) {
+        if (anno['@id'] === annotationId) {
+          console.log('DD ', annotationId);
+          console.log('DD node:', node, 'tags:', node.cumulativeTags);
+          tags = node.cumulativeTags;
+          return true;
+        }
+      }
+    });
+    console.log('KK tags:', tags);
+    return tags;
   }
 
   matchHierarchy(annotation, tags) {
@@ -310,8 +331,10 @@ export default class AnnotationToc {
 
     for (let tag of sortedTags) {
       let childNode = node.childNodes[tag];
-      callback(childNode);
-      _this.visit(childNode, callback);
+      let stop = callback(childNode);
+      if (!stop) {
+        _this.visit(childNode, callback);
+      }
     }
   }
 }
