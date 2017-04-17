@@ -1,5 +1,4 @@
 export default {
-
   /**
    * @returns {Array} IDs of layers associated with the annotation
    */

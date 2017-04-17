@@ -265,8 +265,6 @@ export default class AnnotationToc {
     this.walk((node) => {
       for (let anno of [node.annotation].concat(node.childAnnotations)) {
         if (anno['@id'] === annotationId) {
-          console.log('DD ', annotationId);
-          console.log('DD node:', node, 'tags:', node.cumulativeTags);
           tags = node.cumulativeTags;
           return true;
         }
