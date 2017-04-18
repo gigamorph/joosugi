@@ -263,17 +263,23 @@ export default class AnnotationToc {
     var tags = [];
 
     this.walk((node) => {
-      for (let anno of [node.annotation].concat(node.childAnnotations)) {
+      const annotations = (node.annotation ? [node.annotation] : [])
+        .concat(node.childAnnotations);
+
+      for (let anno of annotations) {
         if (anno['@id'] === annotationId) {
           tags = node.cumulativeTags;
           return true;
         }
       }
     });
-    console.log('KK tags:', tags);
     return tags;
   }
 
+  /**
+   * @param {object} annotation
+   * @param {string[]} tags
+   */
   matchHierarchy(annotation, tags) {
     var node = this.getNodeFromTags(tags);
     return node ? this.matchNode(annotation, node) : false;
