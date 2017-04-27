@@ -1,15 +1,17 @@
 import AnnotationToc from './annotation-toc';
 import annoUtil from './annotation-util';
 
+let logger = null;
+
 export default class AnnotationExplorer {
   constructor(options) {
     this.options = jQuery.extend({
       dataSource: null,
       tocSpec: null,
-      logger: { debug: () => {}, error: () => {} }
+      logger: { debug: () => null, info: () => null, error: () => null }
     }, options);
-    this.logger = this.options.logger;
-    this.logger.debug('AnnotationExplorer#constructor options:', options);
+    logger = this.options.logger;
+    logger.debug('AnnotationExplorer#constructor options:', options);
     this.AnnotationToc = null;
   }
 
@@ -47,6 +49,6 @@ export default class AnnotationExplorer {
 
   reloadAnnotationToc(spec, annotations) {
     this.annotationToc = new AnnotationToc(spec, annotations);
-    this.logger.debug('AnnotationExplorer#reloadAnnotationToc toc:', this.annotationToc.annoHierarchy);
+    logger.debug('AnnotationExplorer#reloadAnnotationToc toc:', this.annotationToc.annoHierarchy);
   }
 }
