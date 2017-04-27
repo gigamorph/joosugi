@@ -7,6 +7,10 @@ class Annotation {
     this.oaAnnotation = oaAnnotation;
   }
 
+  get layerId() {
+    return this.oaAnnotation.layerId;
+  }
+
   /**
    * @returns {Array} IDs of layers associated with the annotation
    */
