@@ -1,39 +1,38 @@
-//var VersionFile = require('webpack-version-file-plugin');
-var BannerWebpackPlugin = require('banner-webpack-plugin');
 var path = require('path');
-var npmPackage = require('./package');
+const webpack = require('webpack');
 
 function header() {
-  return '// Joosugi version ' + npmPackage.version + '\n// ' + 
-    'Build: ' + new Date() + '\n\n';
+  var gitDesc = process.env.GIT_DESC;
+  var text = 'joosugi ' + gitDesc + ' built ' + new Date();
+  return '// ' + text + '\n\n';
 }
+process.traceDeprecation = true;
 
 module.exports = {
-  debug: true,
   entry: {
     joosugi: './src/js/main.js',
   },
   output: {
-    path: './dist',
+    path: path.resolve(__dirname, './dist'),
     filename: 'joosugi.js'
   },
   module: {
-    loaders: [{
+    rules: [{
       test: /\.js$/,
-      /*exclude: /node_modules/,*/
-      loader: 'babel-loader',
-      query: {
-        presets: ['es2015', 'es2017']
-      }
+      use: [{
+        loader: 'babel-loader',
+        options: {
+          presets: ['es2015', 'es2017']
+        }
+      }]
     }]
   },
   plugins: [
-    new BannerWebpackPlugin({
-      chunks: {
-        joosugi: {
-          beforeContent: header()
-        }
-      }
+    new webpack.BannerPlugin({
+      banner: header(),
+      test: /\.js$/,
+      raw: true,
+      entryOnly: true
     })
   ]
 };

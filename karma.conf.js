@@ -23,24 +23,25 @@ module.exports = function(config) {
     preprocessors: {
       './test/**/*.js': ['webpack']
     },
-    
+
     webpack: {
-      debug: true,
       module: {
-        loaders: [{
+        rules: [{
           test: /\.js$/,
           include: [
             path.resolve(__dirname, 'src/js'),
             path.resolve(__dirname, 'test')
           ],
-          loader: 'babel-loader',
-          query: {
-            presets: ['es2015', 'es2017']
-          }
+          use: [{
+            loader: 'babel-loader',
+            options: {
+              presets: ['es2015', 'es2017']
+            }
+          }]
         }]
       }
     },
-    
+
     plugins: [
       require('karma-webpack'),
       require('karma-sourcemap-loader'),
