@@ -5,7 +5,7 @@
   "scripts": {
     "test": "karma start --singleRun",
     "clean": "rm -rf dist/*",
-    "build": "npm run clean && webpack"
+    "build": "npm run clean && GIT_DESC=$(git describe --long --always) webpack"
   },
   "repository": {
     "type": "git",

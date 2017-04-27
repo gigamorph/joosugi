@@ -1,4 +1,4 @@
-// joosugi undefined built Thu Apr 27 2017 14:09:38 GMT-0400 (EDT)
+// joosugi v0.2.1-4-g407d4f9 built Thu Apr 27 2017 14:19:52 GMT-0400 (EDT)
 
 
 /******/ (function(modules) { // webpackBootstrap
