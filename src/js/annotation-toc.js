@@ -289,7 +289,11 @@ export default class AnnotationToc {
     var _this = this;
     var matched = false;
 
-    if (node.annotation['@id'] === annotation['@id']) {
+    if (!node.annotation) {
+      console.log('ERROR AnnotationToc#matchNode no annotation assigned to node', node.spec);
+    }
+
+    if (node.annotation && (node.annotation['@id'] === annotation['@id'])) {
       return true;
     }
     for (let anno of node.childAnnotations) {
