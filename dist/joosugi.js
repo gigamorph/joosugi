@@ -1,4 +1,4 @@
-// joosugi v0.2.1-4-g407d4f9 built Thu Apr 27 2017 14:19:52 GMT-0400 (EDT)
+// joosugi v0.2.1-7-g0524e13 built Tue Jun 06 2017 20:59:30 GMT+0200 (CEST)
 
 
 /******/ (function(modules) { // webpackBootstrap
@@ -978,7 +978,11 @@ var AnnotationToc = function () {
       var _this = this;
       var matched = false;
 
-      if (node.annotation['@id'] === annotation['@id']) {
+      if (!node.annotation) {
+        console.log('ERROR AnnotationToc#matchNode no annotation assigned to node', node.spec);
+      }
+
+      if (node.annotation && node.annotation['@id'] === annotation['@id']) {
         return true;
       }
       var _iteratorNormalCompletion10 = true;
@@ -1336,6 +1340,11 @@ var Annotation = function () {
       } else {
         return null;
       }
+    }
+  }, {
+    key: 'id',
+    get: function get() {
+      return this.oaAnnotation['@id'];
     }
   }, {
     key: 'layerId',
