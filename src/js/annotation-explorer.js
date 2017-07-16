@@ -1,3 +1,4 @@
+import Anno from './annotation-wrapper';
 import AnnotationToc from './annotation-toc';
 import annoUtil from './annotation-util';
 
@@ -19,9 +20,20 @@ export default class AnnotationExplorer {
     return this.options.dataSource.getLayers();
   }
 
-  getAnnotations(options) {
-    console.log('AnnotationExplorer#getAnnotations options:', options);
-    return this.options.dataSource.getAnnotations(options);
+  /**
+   * Options: {
+   *   canvasId: <string>, // required
+   *   layerId: <string> // optional
+   * }
+   *
+   * @param {object} options
+   */
+  async getAnnotations(options) {
+    logger.debug('AnnotationExplorer#getAnnotations options:', options);
+    const annotations = await this.options.dataSource.getAnnotations(options);
+    this._generateInverseTargets(annotations)
+    logger.debug('AnnotationExplorer#getAnnotations annotations:', annotations);
+    return annotations;
   }
 
   createAnnotation(annotation) {
@@ -33,13 +45,13 @@ export default class AnnotationExplorer {
   }
 
   deleteAnnotation(annotationId) {
-    console.log('AnnotationExplorer#deleteAnnotation annotationId:', annotationId);
+    logger.debug('AnnotationExplorer#deleteAnnotation annotationId:', annotationId);
     const promise = this.options.dataSource.deleteAnnotation(annotationId);
     return promise;
   }
 
   updateAnnotationListOrder(canvasId, layerId, annoIds) {
-    console.log('AnnotationExplorer#updateAnnotationListOrder');
+    logger.debug('AnnotationExplorer#updateAnnotationListOrder');
     return this.options.dataSource.updateAnnotationListOrder(canvasId, layerId, annoIds);
   }
 
@@ -50,5 +62,22 @@ export default class AnnotationExplorer {
   reloadAnnotationToc(spec, annotations) {
     this.annotationToc = new AnnotationToc(spec, annotations);
     logger.debug('AnnotationExplorer#reloadAnnotationToc toc:', this.annotationToc.annoHierarchy);
+  }
+
+  _generateInverseTargets(annotations) {
+    const annoMap = {};
+
+    for (let anno of annotations) {
+      annoMap[anno['@id']] = Anno(anno);
+    }
+
+    for (let anno of annotations) {
+      for (let target of Anno(anno).targets) {
+        let targetId = target.full;
+        if (annoMap[targetId]) {
+          annoMap[targetId].addInverseTarget(anno);
+        }
+      }
+    }
   }
 }

@@ -1,4 +1,7 @@
+import Anno from './annotation-wrapper';
 import annoUtil from './annotation-util';
+
+let logger = { debug: () => null, info: () => null, error: () => null };
 
 /**
  * A tag based table-of-contents structure for annotations.
@@ -8,7 +11,15 @@ import annoUtil from './annotation-util';
  * according to the pre-defined TOC tags hierarchy (spec).
  */
 export default class AnnotationToc {
-  constructor(spec, annotations) {
+  constructor(spec, annotations, options) {
+    this.options = Object.assign({
+      logger: null
+    }, options || {});
+
+    if (this.options.logger) {
+      logger = this.options.logger;
+    }
+
     /*
      * Spec is a JSON passed from outside (an array of arrays).
      * It defines the tags to be used to define the hiearchy.
@@ -21,6 +32,10 @@ export default class AnnotationToc {
     this.spec = spec;
 
     this.annotations = annotations;
+    this._annoMap = {};
+    for (let anno of annotations) {
+      this._annoMap[anno['@id']] = anno;
+    }
     this.tagWeights = {}; // for sorting
 
     /**
@@ -52,7 +67,7 @@ export default class AnnotationToc {
   }
 
   init(annotations) {
-    console.log('Toc#init spec: ', this.spec);
+    logger.debug('AnnotationToc#init spec: ', this.spec);
 
     this.annoHierarchy = this.newNode(null, null); // root node
 
@@ -79,7 +94,7 @@ export default class AnnotationToc {
   }
 
   findNodeForAnnotation(annotation) {
-    const targetAnno = annoUtil.findFinalTargetAnnotation(annotation, this.annotations);
+    const targetAnno = this._findFinalTargetAnnotationsOnCanvas(annotation);
     return targetAnno ? this.annoToNodeMap[targetAnno['@id']] : null;
   }
 
@@ -113,7 +128,8 @@ export default class AnnotationToc {
     var remainder = [];
 
     for (let annotation of annotations) {
-      var tags = annoUtil.getTags(annotation);
+      const $anno = Anno(annotation);
+      var tags = $anno.tags;
       var success = _this.buildChildNodes(annotation, tags, 0, _this.annoHierarchy);
 
       if (!success) {
@@ -124,23 +140,30 @@ export default class AnnotationToc {
   }
 
   addRemainingAnnotations(annotations) {
-    var _this = this;
     for (let annotation of annotations) {
-      var targetAnno = annoUtil.findFinalTargetAnnotation(annotation, _this.annotations);
+      let targetAnno = this._findFinalTargetAnnotationOnCanvas(annotation);
       if (targetAnno) {
-        var node = _this.annoToNodeMap[targetAnno['@id']];
+        let node = this.annoToNodeMap[targetAnno['@id']];
         if (targetAnno && node) {
           node.childAnnotations.push(annotation);
-          _this.registerLayerWithNode(node, annotation.layerId);
+          this.registerLayerWithNode(node, annotation.layerId);
         } else {
-          console.log('WARNING Toc#addRemainingAnnotations not covered by ToC');
-          _this._unassigned.push(annotation);
+          logger.error('AnnotationToc#addRemainingAnnotations not covered by ToC');
+          this._unassigned.push(annotation);
         }
       } else {
-        console.log('WARNING Toc#addRemainingAnnotations orphan', annotation);
-        _this._unassigned.push(annotation);
+        logger.error('AnnotationToc#addRemainingAnnotations orphan', annotation);
+        this._unassigned.push(annotation);
       }
     }
+  }
+
+  _findFinalTargetAnnotationOnCanvas(annotation) {
+    const annos = annoUtil.findTargetAnnotationsOnCanvas(annotation, this._annoMap);
+    if (annos.length > 1) {
+      logger.warning('AnnotationToc#_findFinalTargetAnnotationOnCanvas foudn more than one targets:', annos);
+    }
+    return annos[0];
   }
 
   /**
@@ -152,8 +175,6 @@ export default class AnnotationToc {
    * @return {boolean} true if the annotation was set to be a TOC node, false if not.
    */
   buildChildNodes(annotation, tags, rowIndex, parent) {
-    //console.log('ParsedAnnotations#buildNode rowIndex: ' + rowIndex + ', anno:', annotation);
-
     var currentNode = null;
 
     if (rowIndex >= this.spec.nodeSpecs.length) { // no more levels to explore in the TOC structure
@@ -252,7 +273,7 @@ export default class AnnotationToc {
         break;
       }
     }
-    return node.isRoot ? null : node;
+    return (!node || node.isRoot) ? null : node;
   }
 
   /**
@@ -290,7 +311,7 @@ export default class AnnotationToc {
     var matched = false;
 
     if (!node.annotation) {
-      console.log('ERROR AnnotationToc#matchNode no annotation assigned to node', node.spec);
+      logger.error('AnnotationToc#matchNode no annotation assigned to node', node.spec);
     }
 
     if (node.annotation && (node.annotation['@id'] === annotation['@id'])) {

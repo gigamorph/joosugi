@@ -1,3 +1,4 @@
+import Anno from '../src/js/annotation-wrapper';
 import annoUtil from '../src/js/annotation-util';
 import AnnotationToc from '../src/js/annotation-toc';
 import util from './test-util';
@@ -5,10 +6,10 @@ import util from './test-util';
 const expect = require('chai').expect;
 
 describe('AnnotationToC', function() {
-  
+
   let spec = null;
   let annotations = [];
-  
+
   beforeEach(function() {
     spec = {
       shortLabelSeparator: '.',
@@ -28,13 +29,13 @@ describe('AnnotationToC', function() {
       util.createAnnotation({ chars: '2.2',  tags: ['chapter2', 'scene2'] })
     ];
   });
-  
+
   it('should generate a correct ToC structure', function() {
     let toc = new AnnotationToc(spec, annotations);
     let node = toc.getNode('chapter1', 'scene2');
     expect(node.spec.tag).to.equal('scene2');
     expect(node.spec.label).to.equal('Scene 2');
     expect(node.spec.short).to.equal('2');
-    expect(annoUtil.getText(node.annotation)).to.equal('1.2');
+    expect(Anno(node.annotation).bodyText).to.equal('1.2');
   });
 });

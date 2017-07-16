@@ -80,15 +80,20 @@ class Annotation {
    */
   addTarget(target) {
     const anno = this.oaAnnotation;
-    if (anno.on) {
-      if (anno.on instanceof Array) {
-        anno.on.push(target);
-      } else {
-        anno.on = [anno.on, target];
-      }
-    } else {
-      anno.on = [target];
-    }
+
+    anno.on = this._makeArray(anno.on);
+    anno.on.push(target);
+  }
+
+  get targetedBy() {
+    return this._makeArray(this.oaAnnotation.targetedBy);
+  }
+
+  addInverseTarget(annotation) {
+    const anno = this.oaAnnotation;
+
+    anno.targetedBy = this._makeArray(anno.targetedBy);
+    anno.targetedBy.push(annotation);
   }
 
   _makeArray(object) {

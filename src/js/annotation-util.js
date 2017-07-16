@@ -1,52 +1,28 @@
+import Anno from './annotation-wrapper';
+
 export default {
-  /**
-   * @returns {Array} IDs of layers associated with the annotation
-   */
-  getLayers: function(annotation) {
-    const layers = annotation.layer || annotation.layerId; //TODO remove layerId after refactoring yale-mirador
-    return layers instanceof Array ? layers : [layers];
+
+  logger: {debug: () => {}, info: () => {}, error: () => {}},
+
+  setLogger: function(logger) {
+    this.logger = logger;
   },
 
   /**
-   * @returns {boolean} true if the annotation targets a canvas fragment, not another annotation.
+   * @param {object} target "on" attribute of an annotation
+   * @returns {boolean} true if the target is a canvas fragment, not another annotation
    */
-  isAnnoOnCanvas: function(annotation) {
-    return annotation.on['@type'] !== 'oa:Annotation';
+  targetIsAnnotationOnCanvas: function(target) {
+    return target['@type'] !== 'oa:Annotation';
   },
 
-  /**
-   * Returns content of first text (non-tag) resource it finds from the annotation.
-   */
-  getText: function(annotation) {
-    let content = null;
-    let resource = annotation.resource;
-
-    if (!(resource instanceof Array || typeof resource === 'object')) {
-      return null;
-    }
-    if (!(resource instanceof Array)) {
-      resource = [resource];
-    }
-    for (let item of resource) {
-      if (item['@type'] === 'dctypes:Text') {
-        content = item.chars;
-        break;
+  hasTargetOnCanvas: function(annotation) {
+    for (let target of Anno(annotation).targets) {
+      if (this.targetIsAnnotationOnCanvas(target)) {
+        return true;
       }
     }
-    return content;
-  },
-
-  getTags: function(annotation) {
-    const tags = [];
-
-    if (annotation.resource instanceof Array) {
-      for (let item of annotation.resource) {
-        if (item['@type'] === "oa:Tag") {
-          tags.push(item.chars);
-        }
-      }
-    }
-    return tags;
+    return false;
   },
 
   hasTags: function(annotation, tags) {
@@ -67,113 +43,56 @@ export default {
     return true;
   },
 
-  getTargetSelectorValue: function(annotation) {
-    const selector =  annotation.on.selector;
-    return selector ? selector.value : null;
-  },
+  // For an annotation that targets other annotation(s), follow the
+  // "on" relations recursively until no more targets are found.
+  findTransitiveTargetAnnotations: function(annotation, annotationMap) {
+    this.logger.debug('annoUtil.findTransitiveTargetAnnotations annotation:', annotation, 'annotationMap:', annotationMap);
+    const $anno = Anno(annotation);
+    const targetAnnos = $anno.targets.map(target => {
+      const annoId = target.full;
+      return annotationMap[annoId];
+    }).filter(anno => anno !== undefined && anno !== null);
 
-  // For an annotation of annotation,
-  // follow the "on" relation until the eventual target annotation if found.
-  findFinalTargetAnnotation: function(annotation, annotations) {
-    let nextId = '';
-    let nextAnno = annotation;
-    let targetAnno = annotation;
-
-    while(nextAnno) {
-      //console.log('nextAnno:', nextAnno);
-
-      if (nextAnno.on['@type'] === 'oa:Annotation') {
-        nextId = nextAnno.on.full;
-        nextAnno = null;
-        for (let anno of annotations) {
-          if (anno['@id'] === nextId) {
-            targetAnno = anno;
-            nextAnno = anno;
-            break;
-          }
-        }
-      } else {
-        nextAnno = null;
-      }
-    }
-    return targetAnno;
-  },
-
-  findTargetAnnotation: function(annotation, annotations) {
-    let nextId = '';
-    let nextAnno = annotation;
-    let targetAnno = annotation;
-
-    while(nextAnno) {
-      //console.log('nextAnno: ');
-      //console.dir(nextAnno);
-
-      if (nextAnno.on['@type'] === 'oa:Annotation') {
-        nextId = nextAnno.on.full;
-        nextAnno = null;
-        for (let anno of annotations) {
-          if (anno['@id'] === nextId) {
-            targetAnno = anno;
-            nextAnno = anno;
-            break;
-          }
-        }
-      } else {
-        nextAnno = null;
-      }
-    }
-    return targetAnno;
-  },
-
-  getTargetCanvasIds(annotation, options) {
-    const canvasIds = [];
-    let targetAnno = null;
-
-    if (annotation.on['@type'] === 'oa:Annotation') {
-      targetAnno = this.findFinalTargetAnnotation(annotation, options.annotations);
-    } else {
-      targetAnno = annotation;
-    }
-    if (!targetAnno) {
+    if (targetAnnos.length === 0) {
       return [];
     }
-    let targets = targetAnno.on;
-    if (targets instanceof Array) {
-      for (let target of targets) {
-        if (target.full) {
-          canvasIds.push(target.full);
-        }
-      }
-    } else if (typeof targets === 'object') {
-      if (targets.full) {
-        canvasIds.push(targets.full);
-      }
-    } else {
-      console.log('ERROR annoUtil.getFinalTargetCanvasIds: wrong target type ' + (typeof targets));
+
+    let result = targetAnnos;
+
+    for (let targetAnno of targetAnnos) {
+      let tempResult = this.findTransitiveTargetAnnotations(targetAnno, annotationMap);
+      result = result.concat(tempResult);
     }
-    return canvasIds;
+    return result;
   },
 
-  /**
-   * Find annotations from "annotationsList" which this "annotation" annotates
-   * and which belong to the layer with "layerId".
-   */
-  findTargetAnnotations: function(annotation, annotationsList, layerId) {
-    const targetId = annotation.on.full;
-    return annotationsList.filter(function(currentAnno) {
-      return currentAnno.layerId === layerId && currentAnno['@id'] === targetId;
+  // For an annotation that targets other annotation(s), follow the
+  // "on" relations recursively until no more targets are found.
+  findTransitiveTargetingAnnotations: function(annotation, annotationMap) {
+    this.logger.debug('annoUtil.findTransitiveTargetingAnnotations annotation:', annotation, 'annotationMap:', annotationMap);
+    const $anno = Anno(annotation);
+    let targetingAnnos = $anno.targetedBy;
+
+    targetingAnnos = targetingAnnos.filter(anno => {
+      const annoInMap = annotationMap[anno['@id']];
+      return annoInMap !== undefined && annoInMap !== null;
     });
+
+    if (targetingAnnos.length === 0) {
+      return [];
+    }
+    let result = targetingAnnos;
+
+    for (let targetingAnno of targetingAnnos) {
+      let tempResult = this.findTransitiveTargetingAnnotations(targetingAnno, annotationMap);
+      result = result.concat(tempResult);
+    }
+    return result;
   },
 
-  /**
-   * Find annotations from "annotationsList" which annotates this "annotation"
-   * and which belong to the layer with "layerId".
-   */
-  findTargetingAnnotations: function(annotation, annotationsList, layerId) {
-    return annotationsList.filter(function(currentAnno) {
-      const targetId = currentAnno.on.full;
-      return currentAnno.layerId === layerId && annotation['@id'] === targetId;
-    });
+  findTargetAnnotationsOnCanvas: function(annotation, annotationMap) {
+    const allTargetAnnos = this.findTransitiveTargetAnnotations(annotation, annotationMap);
+    return allTargetAnnos.filter(anno => this.targetIsAnnotationOnCanvas(anno));
   },
 
   /**
@@ -187,21 +106,6 @@ export default {
       return currentAnno.layerId === layerId &&
         toc.findNodeForAnnotation(currentAnno) === node;
     });
-  },
-
-  /**
-   * Add target ("on" attribute) to annotation
-   */
-  addTarget: function(annotation, target) {
-    if (annotation.on) {
-      if (annotation.on instanceof Array) {
-        annotation.on.push(target);
-      } else {
-        annotation.on = [annotation.on, target];
-      }
-    } else {
-      annotation.on = [target];
-    }
   },
 
   /**
