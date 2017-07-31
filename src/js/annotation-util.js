@@ -98,14 +98,8 @@ export default {
   },
 
   findAllAnnotationsForTocNode: function(tocNode) {
-    let result = [];
+    let result = [].concat(tocNode.annotations);
 
-    if (tocNode.annotation) {
-      result.push(tocNode.annotation);
-    }
-    if (tocNode.childAnnotations instanceof Array) {
-      result = result.concat(tocNode.childAnnotations);
-    }
     for (let node of Object.values(tocNode.childNodes)) {
       result = result.concat(this.findAllAnnotationsForTocNode(node));
     }

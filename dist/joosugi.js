@@ -1,4 +1,4 @@
-// joosugi v0.3.0-0-gfa722b1 built Mon Jul 31 2017 11:09:59 GMT-0400 (EDT)
+// joosugi v0.3.0-1-gd80b657 built Mon Jul 31 2017 13:54:39 GMT-0400 (EDT)
 
 
 /******/ (function(modules) { // webpackBootstrap
@@ -467,14 +467,8 @@ exports.default = {
   },
 
   findAllAnnotationsForTocNode: function findAllAnnotationsForTocNode(tocNode) {
-    var result = [];
+    var result = [].concat(tocNode.annotations);
 
-    if (tocNode.annotation) {
-      result.push(tocNode.annotation);
-    }
-    if (tocNode.childAnnotations instanceof Array) {
-      result = result.concat(tocNode.childAnnotations);
-    }
     var _iteratorNormalCompletion5 = true;
     var _didIteratorError5 = false;
     var _iteratorError5 = undefined;
@@ -732,7 +726,6 @@ var AnnotationToc = function () {
           for (var _iterator3 = node.annotations[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
             var anno = _step3.value;
 
-            console.log(node.tags);
             if (anno['@id'] === annotationId) {
               tags = node.tags;
               return true;
@@ -960,7 +953,6 @@ var AnnotationToc = function () {
           parent.childNodes[tag] = this._newNode(tag, parent);
         }
         currentNode = parent.childNodes[tag];
-        console.log('tag:', tag, 'node:', currentNode, 'toc:', this._root);
 
         if (parent.isRoot) {
           currentNode.label = this._extractTagNumber(tag);
@@ -1041,7 +1033,7 @@ var AnnotationToc = function () {
         };
       } else {
         var tags = parent.isRoot ? [tag] : parent.tags.concat([tag]);
-        console.log('tag:', tag, 'tags:', JSON.stringify(tags));
+
         return {
           annotations: [],
           canvasAnnotations: [],

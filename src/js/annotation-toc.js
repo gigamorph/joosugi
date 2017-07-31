@@ -92,7 +92,6 @@ export default class AnnotationToc {
 
     this.walk(node => {
       for (let anno of node.annotations) {
-        console.log(node.tags);
         if (anno['@id'] === annotationId) {
           tags = node.tags;
           return true;
@@ -216,7 +215,6 @@ export default class AnnotationToc {
         parent.childNodes[tag] = this._newNode(tag, parent);
       }
       currentNode = parent.childNodes[tag];
-      console.log('tag:', tag, 'node:', currentNode, 'toc:', this._root);
 
       if (parent.isRoot) {
         currentNode.label = this._extractTagNumber(tag);
@@ -269,7 +267,7 @@ export default class AnnotationToc {
     } else {
       const tags = parent.isRoot ? [tag] :
         parent.tags.concat([tag]);
-      console.log('tag:', tag, 'tags:', JSON.stringify(tags));
+
       return {
         annotations: [],
         canvasAnnotations: [],
