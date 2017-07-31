@@ -2,7 +2,7 @@ import Anno from './annotation-wrapper';
 
 export default {
 
-  logger: {debug: () => {}, info: () => {}, error: () => {}},
+  logger: {debug: () => {}, info: () => {}, warning: () => {}, error: () => {}},
 
   setLogger: function(logger) {
     this.logger = logger;
@@ -25,28 +25,10 @@ export default {
     return false;
   },
 
-  hasTags: function(annotation, tags) {
-    const annoTags = this.getTags(annotation);
-
-    for (let i = 0; i < tags.length; ++i) {
-      let found = false;
-      for (let j = 0; j < annoTags.length; ++j) {
-        if (tags[i] === annoTags[j]) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        return false;
-      }
-    }
-    return true;
-  },
-
   // For an annotation that targets other annotation(s), follow the
   // "on" relations recursively until no more targets are found.
   findTransitiveTargetAnnotations: function(annotation, annotationMap) {
-    this.logger.debug('annoUtil.findTransitiveTargetAnnotations annotation:', annotation, 'annotationMap:', annotationMap);
+    //this.logger.debug('annoUtil.findTransitiveTargetAnnotations annotation:', annotation, 'annotationMap:', annotationMap);
     const $anno = Anno(annotation);
     const targetAnnos = $anno.targets.map(target => {
       const annoId = target.full;
@@ -69,7 +51,7 @@ export default {
   // For an annotation that targets other annotation(s), follow the
   // "on" relations recursively until no more targets are found.
   findTransitiveTargetingAnnotations: function(annotation, annotationMap) {
-    this.logger.debug('annoUtil.findTransitiveTargetingAnnotations annotation:', annotation, 'annotationMap:', annotationMap);
+    //this.logger.debug('annoUtil.findTransitiveTargetingAnnotations annotation:', annotation, 'annotationMap:', annotationMap);
     const $anno = Anno(annotation);
     let targetingAnnos = $anno.targetedBy;
 
@@ -92,7 +74,14 @@ export default {
 
   findTargetAnnotationsOnCanvas: function(annotation, annotationMap) {
     const allTargetAnnos = this.findTransitiveTargetAnnotations(annotation, annotationMap);
-    return allTargetAnnos.filter(anno => this.targetIsAnnotationOnCanvas(anno));
+    return allTargetAnnos.filter(anno => {
+      for (let target of Anno(anno).targets) {
+        if (this.targetIsAnnotationOnCanvas(target)) {
+          return true;
+        }
+      }
+      return false;
+    });
   },
 
   /**
@@ -106,6 +95,21 @@ export default {
       return currentAnno.layerId === layerId &&
         toc.findNodeForAnnotation(currentAnno) === node;
     });
+  },
+
+  findAllAnnotationsForTocNode: function(tocNode) {
+    let result = [];
+
+    if (tocNode.annotation) {
+      result.push(tocNode.annotation);
+    }
+    if (tocNode.childAnnotations instanceof Array) {
+      result = result.concat(tocNode.childAnnotations);
+    }
+    for (let node of Object.values(tocNode.childNodes)) {
+      result = result.concat(this.findAllAnnotationsForTocNode(node));
+    }
+    return result;
   },
 
   /**

@@ -12,12 +12,15 @@ describe('AnnotationToC', function() {
 
   beforeEach(function() {
     spec = {
-      shortLabelSeparator: '.',
-      nodeSpecs: [
-        [ { tag: 'chapter1', label: 'Chapter 1', short: '1' },
-          { tag: 'chapter2', label: 'Chapter 2', short: '2' } ],
-        [ { tag: 'scene1', label: 'Scene 1', short: '1' },
-          { tag: 'scene2', label: 'Scene 2', short: '2' } ]
+      "defaultLayer": "/layer/1",
+      "generator": [
+        {"tag": { "prefix": "chapter" }, "label": { "prefix": "Chapter "}, "max": 2,
+         "descriptions": [
+           "Chapter 1. Rise of the Planet of the Apes",
+           "Chapter 2. Dawn of the Planet of the Apes"
+         ]
+        },
+        {"tag": { "prefix": "scene" }, "label": { "prefix": "Scene "}, "max": 5 }
       ]
     };
     annotations = [
@@ -32,10 +35,21 @@ describe('AnnotationToC', function() {
 
   it('should generate a correct ToC structure', function() {
     let toc = new AnnotationToc(spec, annotations);
-    let node = toc.getNode('chapter1', 'scene2');
-    expect(node.spec.tag).to.equal('scene2');
-    expect(node.spec.label).to.equal('Scene 2');
-    expect(node.spec.short).to.equal('2');
-    expect(Anno(node.annotation).bodyText).to.equal('1.2');
+    let node = toc.getNode('chapter1');
+    expect(node.tags.length, 'tags.length').to.equal(1);
+    expect(node.tags[0]).to.equal('chapter1');
+    expect(node.annotations.length).to.equal(1);
+    expect(node.canvasAnnotations.length).to.equal(1);
+    expect(node.label).to.equal('1');
+    expect(Anno(node.canvasAnnotations[0]).bodyText).to.equal('C1');
+
+    node = toc.getNode('chapter1', 'scene2');
+    expect(node.tags.length).to.equal(2);
+    expect(node.tags[0]).to.equal('chapter1');
+    expect(node.tags[1]).to.equal('scene2');
+    expect(node.label).to.equal('1.2');
+    expect(node.annotations.length).to.equal(1);
+    expect(node.canvasAnnotations.length).to.equal(1);
+    expect(Anno(node.canvasAnnotations[0]).bodyText).to.equal('1.2');
   });
 });

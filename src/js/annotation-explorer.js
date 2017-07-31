@@ -28,12 +28,23 @@ export default class AnnotationExplorer {
    *
    * @param {object} options
    */
-  async getAnnotations(options) {
+  getAnnotations(options) {
     logger.debug('AnnotationExplorer#getAnnotations options:', options);
-    const annotations = await this.options.dataSource.getAnnotations(options);
-    this._generateInverseTargets(annotations)
-    logger.debug('AnnotationExplorer#getAnnotations annotations:', annotations);
-    return annotations;
+
+    if (!options.canvasId) {
+      logger.error('AnnotationExplorer#getAnnotations missing options.canvasId');
+      return Promise.resolve([]);
+    }
+
+    return this.options.dataSource.getAnnotations(options)
+    .catch(reason => {
+      throw 'ERROR AnnotationExplorer#getAnnotations dataSource.getAnnotations failed: ' + reason;
+    })
+    .then(annotations => {
+      logger.debug('AnnotationExplorer#getAnnotations annotations:', annotations);
+      this._generateInverseTargets(annotations);
+      return annotations;
+    });
   }
 
   createAnnotation(annotation) {

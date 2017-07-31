@@ -60,15 +60,10 @@ class Annotation {
     return tags;
   }
 
-  hasTags(tags) {
-    for (let annoTag of this.tags) {
-      for (let tag of tags) {
-        if (tag === annoTag) {
-          return true;
-        }
-      }
-    }
-    return false;
+  addTag(tag) {
+    const resources = this._makeArray(this.oaAnnotation.resource);
+    resources.push(this._createTag(tag));
+    this.oaAnnotation.resource  = resources;
   }
 
   get targets() {
@@ -118,5 +113,12 @@ class Annotation {
     } else {
       return null;
     }
+  }
+
+  _createTag(tagString) {
+    return {
+     '@type': 'oa:Tag',
+     chars: tagString
+    };
   }
 }

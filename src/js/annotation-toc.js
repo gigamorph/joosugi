@@ -1,7 +1,7 @@
 import Anno from './annotation-wrapper';
 import annoUtil from './annotation-util';
 
-let logger = { debug: () => null, info: () => null, error: () => null };
+let logger = { debug: () => null, info: () => null, warning: () => null, error: () => null };
 
 /**
  * A tag based table-of-contents structure for annotations.
@@ -20,23 +20,12 @@ export default class AnnotationToc {
       logger = this.options.logger;
     }
 
-    /*
-     * Spec is a JSON passed from outside (an array of arrays).
-     * It defines the tags to be used to define the hiearchy.
-     * It is different from "ranges" because
-     * it is used to define a strucutre of annotations in a single canvas
-     * while ranges are used to define a structure of canvases in a sequence.
-     * For example, the first array could list tags for sections of a story
-     * and the second one could list tags for sub-sections.
-     */
     this.spec = spec;
-
     this.annotations = annotations;
     this._annoMap = {};
     for (let anno of annotations) {
       this._annoMap[anno['@id']] = anno;
     }
-    this.tagWeights = {}; // for sorting
 
     /**
      * This can be considered the output of parse,
@@ -44,18 +33,14 @@ export default class AnnotationToc {
      *
      * Each node is an object:
      * {
-     *   spec: AN_OBJECT, // spec object from this.spec, with label, short, tag attributes
-     *   annotation: AN_OBJECT, // annotation
-     *   layerIds: A_SET, // set of layer IDs for annotations that belong to this node or its children
-     *   cumulativeLabel: A_STRING, // concatenation of short labels inherited from the parent nodes
-     *   cumulativeTags: [], // list of tags for this node and its ancestors
+     *   annotations: [], // annotations that directly belong to this node
+     *   canvasAnnotations: [], // annotations that targets a canvas directly
+     *   tags: [], // tags for this node
      *   childNodes: AN_OBJECT, // child TOC nodes as a hashmap on tags
-     *   childAnnotations: AN_ARRAY, // non-TOC-node annotations that targets this node
-     *   isRoot: A_BOOL, // true if the node is the root
-     *   weight: A_NUMBER // for sorting
+     *   isRoot: A_BOOL // true if the node is the root
      * }
      */
-    this.annoHierarchy = null;
+    this._root = null;
 
     /**
      * Annotations that do not belong to the ToC structure.
@@ -68,10 +53,7 @@ export default class AnnotationToc {
 
   init(annotations) {
     logger.debug('AnnotationToc#init spec: ', this.spec);
-
-    this.annoHierarchy = this.newNode(null, null); // root node
-
-    this.initTagWeights();
+    this._root = this._newNode(null, null); // root node
     this.parse(this.annotations);
   }
 
@@ -82,7 +64,7 @@ export default class AnnotationToc {
    */
   getNode() {
     const tags = Array.from(arguments);
-    let node = this.annoHierarchy;
+    let node = this._root;
 
     for (let tag of tags) {
       if (!node) {
@@ -90,190 +72,15 @@ export default class AnnotationToc {
       }
       node = node.childNodes[tag];
     }
-    return (node === this.annoHierarchy) ? null : node;
+    return (node === this._root) ? null : node;
   }
 
   findNodeForAnnotation(annotation) {
-    const targetAnno = this._findFinalTargetAnnotationsOnCanvas(annotation);
-    return targetAnno ? this.annoToNodeMap[targetAnno['@id']] : null;
-  }
-
-  /**
-   * Assign weights to tags according to their position in the array.
-   */
-  initTagWeights() {
-    var _this = this;
-    //jQuery.each(this.spec.nodeSpecs, function(rowIndex, row) {
-    for (let row of this.spec.nodeSpecs) {
-      //jQuery.each(row, function(index, nodeSpec) {
-      for (let [index, nodeSpec] of row.entries()) {
-        _this.tagWeights[nodeSpec.tag] = index;
-      }
-    }
-  }
-
-  parse() {
-    // First pass
-    var remainingAnnotations = this.addTaggedAnnotations(this.annotations);
-    // Second pass
-    this.addRemainingAnnotations(remainingAnnotations);
-  }
-
-  /**
-   * Build a TOC structure
-   * @return An array of annotations that are NOT assigned to a TOC node.
-   */
-  addTaggedAnnotations(annotations) {
-    var _this = this;
-    var remainder = [];
-
-    for (let annotation of annotations) {
-      const $anno = Anno(annotation);
-      var tags = $anno.tags;
-      var success = _this.buildChildNodes(annotation, tags, 0, _this.annoHierarchy);
-
-      if (!success) {
-        remainder.push(annotation);
-      }
-    }
-    return remainder;
-  }
-
-  addRemainingAnnotations(annotations) {
-    for (let annotation of annotations) {
-      let targetAnno = this._findFinalTargetAnnotationOnCanvas(annotation);
-      if (targetAnno) {
-        let node = this.annoToNodeMap[targetAnno['@id']];
-        if (targetAnno && node) {
-          node.childAnnotations.push(annotation);
-          this.registerLayerWithNode(node, annotation.layerId);
-        } else {
-          logger.error('AnnotationToc#addRemainingAnnotations not covered by ToC');
-          this._unassigned.push(annotation);
-        }
-      } else {
-        logger.error('AnnotationToc#addRemainingAnnotations orphan', annotation);
-        this._unassigned.push(annotation);
-      }
-    }
-  }
-
-  _findFinalTargetAnnotationOnCanvas(annotation) {
-    const annos = annoUtil.findTargetAnnotationsOnCanvas(annotation, this._annoMap);
-    if (annos.length > 1) {
-      logger.warning('AnnotationToc#_findFinalTargetAnnotationOnCanvas foudn more than one targets:', annos);
-    }
-    return annos[0];
-  }
-
-  /**
-   * Recursively builds the TOC structure.
-   * @param {object} annotation Annotation to be assigned to the parent node
-   * @param {string[]} tags
-   * @param {number} rowIndex Index of this.annoHierarchy
-   * @param {object} parent Parent node
-   * @return {boolean} true if the annotation was set to be a TOC node, false if not.
-   */
-  buildChildNodes(annotation, tags, rowIndex, parent) {
-    var currentNode = null;
-
-    if (rowIndex >= this.spec.nodeSpecs.length) { // no more levels to explore in the TOC structure
-      if (parent.isRoot) { // The root is not a TOC node
-        return false;
-      } else { // Assign the annotation to parent (a TOC node)
-        parent.annotation = annotation;
-        this.annoToNodeMap[annotation['@id']] = parent;
-        this.registerLayerWithNode(parent, annotation.layerId);
-        return true;
-      }
-    }
-
-    var nodeSpec = this.tagInSpecs(tags, this.spec.nodeSpecs[rowIndex]);
-
-    if (nodeSpec) { // one of the tags belongs to the corresponding level of the pre-defined tag hierarchy
-      var tag = nodeSpec.tag;
-      var annoHierarchy = this.annoHierarchy;
-
-      if (!parent.childNodes[tag]) {
-        parent.childNodes[tag] = this.newNode(nodeSpec, parent);
-      }
-
-      currentNode = parent.childNodes[tag];
-
-      if (parent.isRoot) {
-        currentNode.cumulativeLabel = currentNode.spec.short;
-      } else {
-        currentNode.cumulativeLabel = parent.cumulativeLabel +
-          this.spec.shortLabelSeparator + currentNode.spec.short;
-      }
-      return this.buildChildNodes(annotation, tags, rowIndex+1, currentNode);
-    } else { // no matching tags so far
-      if (parent.isRoot) {
-        return false;
-      } else {
-        parent.annotation = annotation;
-        this.registerLayerWithNode(parent, annotation.layerId);
-        this.annoToNodeMap[annotation['@id']] = parent;
-        return true;
-      }
-    }
-  }
-
-  /**
-   * A tag object is an object in this.tagHierarcy that represents a tag.
-   *
-   * @param {string[]} tags List of tags
-   * @param {object[]} nodeSpecs List of node specs
-   * @return {object} The "node spec" object if one of the objects in nodeSpecs represents one of the tags; null if not.
-   */
-  tagInSpecs(tags, nodeSpecs) {
-    var match = null;
-    for (let tag of tags) {
-      for (let nodeSpec of nodeSpecs) {
-        if (tag === nodeSpec.tag) {
-          match = nodeSpec;
-          break;
-        }
-      }
-      if (match) {
-        break;
-      }
-    }
-    return match;
-  }
-
-  newNode(nodeSpec, parent) {
-    if (!parent) { // root node
-      return {
-        isRoot: true,
-        childNodes: {}
-      };
-    } else {
-      const tags = parent.isRoot ? [nodeSpec.tag] :
-        parent.cumulativeTags.concat([nodeSpec.tag]);
-      return {
-        spec: nodeSpec,
-        annotation: null,
-        layerIds: new Set(),
-        cumulativeLabel: '',
-        cumulativeTags: tags,
-        childNodes: {},
-        childAnnotations: [],
-        weight: this.tagWeights[nodeSpec.tag]
-      };
-    }
+    return this.getNode.apply(this, annotation.tocTags);
   }
 
   getNodeFromTags(tags) {
-    var node = this.annoHierarchy;
-
-    for (let tag of tags) {
-      node = node.childNodes[tag];
-      if (!node) {
-        break;
-      }
-    }
-    return (!node || node.isRoot) ? null : node;
+    return this.getNode.apply(this, tags);
   }
 
   /**
@@ -281,15 +88,13 @@ export default class AnnotationToc {
    * @param {string} annotationId
    */
   getTagsFromAnnotationId(annotationId) {
-    var tags = [];
+    let tags = [];
 
-    this.walk((node) => {
-      const annotations = (node.annotation ? [node.annotation] : [])
-        .concat(node.childAnnotations);
-
-      for (let anno of annotations) {
+    this.walk(node => {
+      for (let anno of node.annotations) {
+        console.log(node.tags);
         if (anno['@id'] === annotationId) {
-          tags = node.cumulativeTags;
+          tags = node.tags;
           return true;
         }
       }
@@ -302,38 +107,29 @@ export default class AnnotationToc {
    * @param {string[]} tags
    */
   matchHierarchy(annotation, tags) {
-    var node = this.getNodeFromTags(tags);
+    const node = this.getNodeFromTags(tags);
     return node ? this.matchNode(annotation, node) : false;
   }
 
   matchNode(annotation, node) {
-    var _this = this;
-    var matched = false;
+    let matched = false;
 
-    if (!node.annotation) {
-      logger.error('AnnotationToc#matchNode no annotation assigned to node', node.spec);
-    }
-
-    if (node.annotation && (node.annotation['@id'] === annotation['@id'])) {
+    let annos = node.canvasAnnotations.filter(anno => anno['@id'] === annotation['@id']);
+    if (annos.length > 0) {
       return true;
     }
-    for (let anno of node.childAnnotations) {
-      if (anno['@id'] === annotation['@id']) {
-        matched = true;
-        break;
-      }
-    }
-    for (let childNode of Object.values(node.childNodes)) {
-      if (_this.matchNode(annotation, childNode)) {
-        matched = true;
-        break;
-      }
-    }
-    return matched;
-  }
 
-  registerLayerWithNode(node, layerId) {
-    node.layerIds.add(layerId);
+    annos = node.annotations.filter(anno => anno['@id'] === annotation['@id']);
+    if (annos.length > 0) {
+      return true;
+    }
+
+    for (let childNode of Object.values(node.childNodes)) {
+      if (this.matchNode(annotation, childNode)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   unassigned() {
@@ -349,21 +145,138 @@ export default class AnnotationToc {
    * @param {function} visitCallback
    */
   walk(visitCallback) {
-    this.visit(this.annoHierarchy, visitCallback);
+    this._visit(this._root, visitCallback);
   }
 
-  visit(node, callback) {
-    const _this = this;
-    const sortedTags = Object.keys(node.childNodes).sort(function(a, b) {
-      return _this.tagWeights[a] - _this.tagWeights[b];
-    });
+  _visit(node, callback) {
+    const sortedTags = Object.keys(node.childNodes).sort();
 
     for (let tag of sortedTags) {
       let childNode = node.childNodes[tag];
       let stop = callback(childNode);
       if (!stop) {
-        _this.visit(childNode, callback);
+        this._visit(childNode, callback);
       }
+    }
+  }
+
+  parse() {
+    // First pass
+    const remainingAnnotations = this._buildTocTree(this.annotations);
+  }
+
+  /**
+   * Build a TOC structure
+   * @return An array of annotations that are NOT assigned to a TOC node.
+   */
+  _buildTocTree(annotations) {
+    const remainder = [];
+
+    for (let annotation of annotations) {
+      const $anno = Anno(annotation);
+      const tags = $anno.tags;
+      const success = this._buildChildNodes(annotation, tags, 0, this._root);
+
+      if (!success) {
+        remainder.push(annotation);
+      }
+    }
+    return remainder;
+  }
+
+  /**
+   * Recursively builds the TOC structure.
+   * @param {object} annotation Annotation to be assigned to the parent node
+   * @param {string[]} tags
+   * @param {number} rowIndex Index of this._root
+   * @param {object} parent Parent node
+   * @return {boolean} true if the annotation was set to be a TOC node, false if not.
+   */
+  _buildChildNodes(annotation, tags, rowIndex, parent) {
+    let currentNode = null;
+
+    if (rowIndex >= this.spec.generator.length) { // all tags matched with no more levels to explore in the TOC structure
+      if (parent.isRoot) { // The root is not a TOC node
+        return false;
+      } else { // Assign the annotation to parent (a TOC node)
+        annotation.tocTags = parent.tags;
+        if (annoUtil.hasTargetOnCanvas(annotation)) {
+          parent.canvasAnnotations.push(annotation);
+        }
+        parent.annotations.push(annotation);
+        this.annoToNodeMap[annotation['@id']] = parent;
+        return true;
+      }
+    }
+
+    const tag = this._getTagForLevel(tags, rowIndex);
+
+    if (tag) { // one of the tags belongs to the corresponding level of tag hierarchy
+      if (!parent.childNodes[tag]) {
+        parent.childNodes[tag] = this._newNode(tag, parent);
+      }
+      currentNode = parent.childNodes[tag];
+      console.log('tag:', tag, 'node:', currentNode, 'toc:', this._root);
+
+      if (parent.isRoot) {
+        currentNode.label = this._extractTagNumber(tag);
+      } else {
+        currentNode.label = parent.label + '.' + this._extractTagNumber(tag);
+      }
+      return this._buildChildNodes(annotation, tags, rowIndex+1, currentNode);
+    } else { // no more match before reaching a leaf node
+      if (parent.isRoot) {
+        return false;
+      } else {
+        annotation.tocTags = parent.tags;
+        if (annoUtil.hasTargetOnCanvas(annotation)) {
+          parent.canvasAnnotations.push(annotation);
+        }
+        parent.annotations.push(annotation);
+        this.annoToNodeMap[annotation['@id']] = parent;
+        return true;
+      }
+    }
+  }
+
+  _getTagForLevel(tags, level) {
+    //logger.debug('AnnotationToc#_getTagForLevel tags:', tags, 'level:', level);
+    const prefix = this.spec.generator[level].tag.prefix;
+
+    for (let tag of tags) {
+      if (tag.match('^' + prefix + '\\d+$')) {
+        return tag;
+      }
+    }
+    return null;
+  }
+
+  _extractTagNumber(tag) {
+    return tag.match(/\d+$/)[0];
+  }
+
+  /**
+   *
+   * @param {*} tag
+   * @param {*} parent parent node
+   */
+  _newNode(tag, parent) {
+    if (!parent) { // root node
+      return {
+        isRoot: true,
+        childNodes: {}
+      };
+    } else {
+      const tags = parent.isRoot ? [tag] :
+        parent.tags.concat([tag]);
+      console.log('tag:', tag, 'tags:', JSON.stringify(tags));
+      return {
+        annotations: [],
+        canvasAnnotations: [],
+        tags: tags,
+        label: '',
+        childNodes: {}
+      };
     }
   }
 }
