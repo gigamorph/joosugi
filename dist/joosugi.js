@@ -1,4 +1,4 @@
-// joosugi v0.3.0-1-gd80b657 built Mon Jul 31 2017 13:54:39 GMT-0400 (EDT)
+// joosugi v0.3.0-2-gb1047ad built Tue Aug 01 2017 11:08:11 GMT-0400 (EDT)
 
 
 /******/ (function(modules) { // webpackBootstrap
@@ -832,17 +832,18 @@ var AnnotationToc = function () {
   }, {
     key: '_visit',
     value: function _visit(node, callback) {
-      var sortedTags = Object.keys(node.childNodes).sort();
+      var sortedNodes = Object.values(node.childNodes).sort(function (n0, n1) {
+        return n0.weight - n1.weight;
+      });
 
       var _iteratorNormalCompletion5 = true;
       var _didIteratorError5 = false;
       var _iteratorError5 = undefined;
 
       try {
-        for (var _iterator5 = sortedTags[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-          var tag = _step5.value;
+        for (var _iterator5 = sortedNodes[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+          var childNode = _step5.value;
 
-          var childNode = node.childNodes[tag];
           var stop = callback(childNode);
           if (!stop) {
             this._visit(childNode, callback);
@@ -866,8 +867,27 @@ var AnnotationToc = function () {
   }, {
     key: 'parse',
     value: function parse() {
-      // First pass
-      var remainingAnnotations = this._buildTocTree(this.annotations);
+      this._buildTocTree(this.annotations);
+      this._setNodeOrders(this._root);
+    }
+  }, {
+    key: '_setNodeOrders',
+    value: function _setNodeOrders(node) {
+      if (node.childNodes.length === 0) {
+        return;
+      }
+
+      var pattern = /\d+$/;
+      var keys = Object.keys(node.childNodes).sort(function (tag0, tag1) {
+        var num0 = Number(tag0.substring(tag0.match(pattern).index));
+        var num1 = Number(tag1.substring(tag1.match(pattern).index));
+        return num0 - num1;
+      });
+
+      for (var i = 0; i < keys.length; ++i) {
+        var key = keys[i];
+        node.childNodes[key].weight = i;
+      }
     }
 
     /**
@@ -893,7 +913,7 @@ var AnnotationToc = function () {
           var success = this._buildChildNodes(annotation, tags, 0, this._root);
 
           if (!success) {
-            remainder.push(annotation);
+            this._unassigned.push(annotation);
           }
         }
       } catch (err) {
@@ -910,8 +930,6 @@ var AnnotationToc = function () {
           }
         }
       }
-
-      return remainder;
     }
 
     /**
@@ -926,13 +944,14 @@ var AnnotationToc = function () {
   }, {
     key: '_buildChildNodes',
     value: function _buildChildNodes(annotation, tags, rowIndex, parent) {
+      //logger.debug('AnnotationToc#_buildChildNodes anno:', annotation, 'tags:', tags, 'depth:', rowIndex, 'parent:', parent);
       var currentNode = null;
 
       if (rowIndex >= this.spec.generator.length) {
         // all tags matched with no more levels to explore in the TOC structure
         if (parent.isRoot) {
-          // The root is not a TOC node
-          return false;
+          // Note: the root is not a TOC node
+          return false; // generator has no depth
         } else {
           // Assign the annotation to parent (a TOC node)
           annotation.tocTags = parent.tags;
@@ -1039,7 +1058,8 @@ var AnnotationToc = function () {
           canvasAnnotations: [],
           tags: tags,
           label: '',
-          childNodes: {}
+          childNodes: {},
+          weight: 0 // to define order among nodes at the same level
         };
       }
     }

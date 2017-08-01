@@ -148,10 +148,10 @@ export default class AnnotationToc {
   }
 
   _visit(node, callback) {
-    const sortedTags = Object.keys(node.childNodes).sort();
+    const sortedNodes = Object.values(node.childNodes)
+      .sort((n0, n1) => n0.weight - n1.weight);
 
-    for (let tag of sortedTags) {
-      let childNode = node.childNodes[tag];
+    for (let childNode of sortedNodes) {
       let stop = callback(childNode);
       if (!stop) {
         this._visit(childNode, callback);
@@ -160,8 +160,26 @@ export default class AnnotationToc {
   }
 
   parse() {
-    // First pass
-    const remainingAnnotations = this._buildTocTree(this.annotations);
+    this._buildTocTree(this.annotations);
+    this._setNodeOrders(this._root);
+  }
+
+  _setNodeOrders(node) {
+    if (node.childNodes.length === 0) {
+      return;
+    }
+
+    const pattern = /\d+$/;
+    const keys = Object.keys(node.childNodes).sort((tag0, tag1) => {
+      const num0 = Number(tag0.substring(tag0.match(pattern).index));
+      const num1 = Number(tag1.substring(tag1.match(pattern).index));
+      return num0 - num1;
+    });
+
+    for (let i = 0; i < keys.length; ++i) {
+      let key = keys[i];
+      node.childNodes[key].weight = i;
+    }
   }
 
   /**
@@ -177,10 +195,9 @@ export default class AnnotationToc {
       const success = this._buildChildNodes(annotation, tags, 0, this._root);
 
       if (!success) {
-        remainder.push(annotation);
+        this._unassigned.push(annotation);
       }
     }
-    return remainder;
   }
 
   /**
@@ -192,11 +209,12 @@ export default class AnnotationToc {
    * @return {boolean} true if the annotation was set to be a TOC node, false if not.
    */
   _buildChildNodes(annotation, tags, rowIndex, parent) {
+    //logger.debug('AnnotationToc#_buildChildNodes anno:', annotation, 'tags:', tags, 'depth:', rowIndex, 'parent:', parent);
     let currentNode = null;
 
     if (rowIndex >= this.spec.generator.length) { // all tags matched with no more levels to explore in the TOC structure
-      if (parent.isRoot) { // The root is not a TOC node
-        return false;
+      if (parent.isRoot) { // Note: the root is not a TOC node
+        return false; // generator has no depth
       } else { // Assign the annotation to parent (a TOC node)
         annotation.tocTags = parent.tags;
         if (annoUtil.hasTargetOnCanvas(annotation)) {
@@ -273,7 +291,8 @@ export default class AnnotationToc {
         canvasAnnotations: [],
         tags: tags,
         label: '',
-        childNodes: {}
+        childNodes: {},
+        weight: 0 // to define order among nodes at the same level
       };
     }
   }
