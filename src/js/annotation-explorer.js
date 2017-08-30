@@ -29,7 +29,7 @@ export default class AnnotationExplorer {
    * @param {object} options
    */
   getAnnotations(options) {
-    logger.debug('AnnotationExplorer#getAnnotations options:', options);
+    //logger.debug('AnnotationExplorer#getAnnotations options:', options);
 
     if (!options.canvasId) {
       logger.error('AnnotationExplorer#getAnnotations missing options.canvasId');

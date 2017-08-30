@@ -73,6 +73,7 @@ export default {
   },
 
   findTargetAnnotationsOnCanvas: function(annotation, annotationMap) {
+    //this.logger.debug('AnnotationUtil.findTargetAnnotationsOnCanvas anno:', annotation, 'annoMap:', annotationMap);
     const allTargetAnnos = this.findTransitiveTargetAnnotations(annotation, annotationMap);
     return allTargetAnnos.filter(anno => {
       for (let target of Anno(anno).targets) {

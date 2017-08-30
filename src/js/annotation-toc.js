@@ -164,21 +164,25 @@ export default class AnnotationToc {
     this._setNodeOrders(this._root);
   }
 
+  // Assign weights to child nodes, recursively
   _setNodeOrders(node) {
     if (node.childNodes.length === 0) {
       return;
     }
 
     const pattern = /\d+$/;
-    const keys = Object.keys(node.childNodes).sort((tag0, tag1) => {
+    const sortedKeys = Object.keys(node.childNodes).sort((tag0, tag1) => {
       const num0 = Number(tag0.substring(tag0.match(pattern).index));
       const num1 = Number(tag1.substring(tag1.match(pattern).index));
       return num0 - num1;
     });
 
-    for (let i = 0; i < keys.length; ++i) {
-      let key = keys[i];
-      node.childNodes[key].weight = i;
+    for (let i = 0; i < sortedKeys.length; ++i) {
+      let key = sortedKeys[i];
+      let childNode = node.childNodes[key];
+
+      childNode.weight = i;
+      this._setNodeOrders(childNode);
     }
   }
 
