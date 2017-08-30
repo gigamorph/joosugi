@@ -1,4 +1,4 @@
-// joosugi v0.3.0-2-gb1047ad built Tue Aug 01 2017 11:08:11 GMT-0400 (EDT)
+// joosugi v0.3.0-4-gf730fd8 built Wed Aug 30 2017 14:49:50 GMT-0400 (EDT)
 
 
 /******/ (function(modules) { // webpackBootstrap
@@ -419,6 +419,7 @@ exports.default = {
   findTargetAnnotationsOnCanvas: function findTargetAnnotationsOnCanvas(annotation, annotationMap) {
     var _this = this;
 
+    //this.logger.debug('AnnotationUtil.findTargetAnnotationsOnCanvas anno:', annotation, 'annoMap:', annotationMap);
     var allTargetAnnos = this.findTransitiveTargetAnnotations(annotation, annotationMap);
     return allTargetAnnos.filter(function (anno) {
       var _iteratorNormalCompletion4 = true;
@@ -870,6 +871,9 @@ var AnnotationToc = function () {
       this._buildTocTree(this.annotations);
       this._setNodeOrders(this._root);
     }
+
+    // Assign weights to child nodes, recursively
+
   }, {
     key: '_setNodeOrders',
     value: function _setNodeOrders(node) {
@@ -878,15 +882,18 @@ var AnnotationToc = function () {
       }
 
       var pattern = /\d+$/;
-      var keys = Object.keys(node.childNodes).sort(function (tag0, tag1) {
+      var sortedKeys = Object.keys(node.childNodes).sort(function (tag0, tag1) {
         var num0 = Number(tag0.substring(tag0.match(pattern).index));
         var num1 = Number(tag1.substring(tag1.match(pattern).index));
         return num0 - num1;
       });
 
-      for (var i = 0; i < keys.length; ++i) {
-        var key = keys[i];
-        node.childNodes[key].weight = i;
+      for (var i = 0; i < sortedKeys.length; ++i) {
+        var key = sortedKeys[i];
+        var childNode = node.childNodes[key];
+
+        childNode.weight = i;
+        this._setNodeOrders(childNode);
       }
     }
 
@@ -1173,7 +1180,7 @@ var AnnotationExplorer = function () {
     value: function getAnnotations(options) {
       var _this = this;
 
-      logger.debug('AnnotationExplorer#getAnnotations options:', options);
+      //logger.debug('AnnotationExplorer#getAnnotations options:', options);
 
       if (!options.canvasId) {
         logger.error('AnnotationExplorer#getAnnotations missing options.canvasId');
