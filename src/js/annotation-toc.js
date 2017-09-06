@@ -37,7 +37,8 @@ export default class AnnotationToc {
      *   canvasAnnotations: [], // annotations that targets a canvas directly
      *   tags: [], // tags for this node
      *   childNodes: AN_OBJECT, // child TOC nodes as a hashmap on tags
-     *   isRoot: A_BOOL // true if the node is the root
+     *   isRoot: A_BOOL, // true if the node is the root
+     *   isDummy: A_BOOL  // true if the node is just a placeholder for reaching the next level of depth
      * }
      */
     this._root = null;
@@ -144,17 +145,17 @@ export default class AnnotationToc {
    * @param {function} visitCallback
    */
   walk(visitCallback) {
-    this._visit(this._root, visitCallback);
+    this._visit(this._root, visitCallback, 0);
   }
 
-  _visit(node, callback) {
+  _visit(node, callback, level) {
     const sortedNodes = Object.values(node.childNodes)
       .sort((n0, n1) => n0.weight - n1.weight);
 
     for (let childNode of sortedNodes) {
-      let stop = callback(childNode);
+      let stop = callback(childNode, level);
       if (!stop) {
-        this._visit(childNode, callback);
+        this._visit(childNode, callback, level + 1);
       }
     }
   }
@@ -230,11 +231,11 @@ export default class AnnotationToc {
       }
     }
 
-    const tag = this._getTagForLevel(tags, rowIndex);
+    const [tag, isDummy] = this._getTagForLevel(tags, rowIndex);
 
     if (tag) { // one of the tags belongs to the corresponding level of tag hierarchy
       if (!parent.childNodes[tag]) {
-        parent.childNodes[tag] = this._newNode(tag, parent);
+        parent.childNodes[tag] = this._newNode(tag, parent, isDummy);
       }
       currentNode = parent.childNodes[tag];
 
@@ -264,11 +265,13 @@ export default class AnnotationToc {
     const prefix = this.spec.generator[level].tag.prefix;
 
     for (let tag of tags) {
-      if (tag.match('^' + prefix + '\\d+$')) {
-        return tag;
+      let match = tag.match('^' + prefix + '(\\d+)$');
+      if (match) {
+        let isDummy = match[1] === '0';
+        return [tag, isDummy];
       }
     }
-    return null;
+    return [null, null];
   }
 
   _extractTagNumber(tag) {
@@ -277,10 +280,11 @@ export default class AnnotationToc {
 
   /**
    *
-   * @param {*} tag
-   * @param {*} parent parent node
+   * @param {string} tag
+   * @param {object} parent parent node
+   * @param {boolean} isDummy true if a placeholder node
    */
-  _newNode(tag, parent) {
+  _newNode(tag, parent, isDummy) {
     if (!parent) { // root node
       return {
         isRoot: true,
@@ -296,7 +300,8 @@ export default class AnnotationToc {
         tags: tags,
         label: '',
         childNodes: {},
-        weight: 0 // to define order among nodes at the same level
+        weight: 0, // to define order among nodes at the same level
+        isDummy: isDummy
       };
     }
   }
