@@ -1,5 +1,5 @@
 export default {
-  
+
   createAnnotation: function(options) {
     const _this = this;
     const anno = {
@@ -32,14 +32,17 @@ export default {
           anno.on.push(_this.createOnAttribute(targetConfig));
         });
       } else {
-        anno.on = this.createOnAttribute(targetConfigs); 
+        anno.on = this.createOnAttribute(targetConfigs);
       }
     } else {
       anno.on = this.createOnAttribute();
     }
+    if (options.layerId) {
+      anno.layerId = options.layerId;
+    }
     return anno;
   },
-  
+
   createOnAttribute: function(config) {
     const on = {
       '@type': 'oa:SpecificResource',
@@ -60,7 +63,7 @@ export default {
       if (config.type) {
         if (config.type == 'canvas') {
           on['@type'] = 'oa:SpecificResource';
-          
+
         } else {
           on['@type'] = 'oa:Annotation';
           delete on.selector;
@@ -75,7 +78,7 @@ export default {
     }
     return on;
   },
-  
+
   createTag: function(value) {
     const tag = {
       "@type": "oa:Tag",

@@ -1,8 +1,45 @@
 import Anno from '../src/js/annotation-wrapper';
+import AnnotationToc from '../src/js/annotation-toc';
 import annoUtil from '../src/js/annotation-util';
 import util from './test-util';
 
 import { expect } from 'chai';
+
+describe('findTocSiblings', function() {
+  it('identifies siblings correctly', function() {
+    const spec = {
+      "generator": [
+        {"tag": { "prefix": "chapter" }, "label": { "prefix": "Chapter "}, "max": 2 },
+        {"tag": { "prefix": "scene" }, "label": { "prefix": "Scene "}, "max": 5 },
+        {"tag": { "prefix": "p" }, "label": { "prefix": "Paragraph "}, "max": 5 }
+      ]
+    };
+
+    const a_1 = util.createAnnotation({ chars: 'C1',  tags: ['chapter1'], layerId: '/layer/chapter' });
+    const a_11 = util.createAnnotation({ chars: '1.1',  tags: ['chapter1', 'scene1'], layerId: '/layer/scene' });
+    const a_111_e = util.createAnnotation({ chars: '1.1 p1',  tags: ['chapter1', 'scene1', 'p1'], layerId: '/layer/english' });
+    const a_111_t = util.createAnnotation({ chars: '1.1 p1',  tags: ['chapter1', 'scene1', 'p1'], layerId: '/layer/tibetan' });
+    const a_112_e = util.createAnnotation({ chars: '1.1 p2',  tags: ['chapter1', 'scene1', 'p2'], layerId: '/layer/english' });
+    const a_112_t = util.createAnnotation({ chars: '1.1 p2',  tags: ['chapter1', 'scene1', 'p2'], layerId: '/layer/tibetan' });
+    const a_2 = util.createAnnotation({ chars: 'C2',  tags: ['chapter2'], layerId: 'layer/chapter' });
+    const a_201_e = util.createAnnotation({ chars: '2 p1',  tags: ['chapter2', 'scene0', 'p1'], layerId: '/layer/english' });
+    const a_201_t = util.createAnnotation({ chars: '2 p1',  tags: ['chapter2', 'scene0', 'p1'], layerId: '/layer/tibetan' });
+
+    const annotations = [a_1, a_11, a_111_e, a_111_t, a_112_e, a_112_t, a_2, a_201_e, a_201_t];
+    const toc = new AnnotationToc(spec, annotations);
+
+    let siblings = annoUtil.findTocSiblings(a_111_e, annotations, '/layer/tibetan', toc);
+    expect(siblings).to.have.lengthOf(1);
+    expect(siblings).to.include(a_111_t);
+
+    console.log('hello');
+    toc.print();
+
+    siblings = annoUtil.findTocSiblings(a_201_t, annotations, '/layer/english', toc);
+    expect(siblings).to.have.lengthOf(1);
+    expect(siblings).to.include(a_201_e);
+  });
+});
 
 describe('mergeTargets (deprecate?)', function() {
 
