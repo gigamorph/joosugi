@@ -305,4 +305,43 @@ export default class AnnotationToc {
       };
     }
   }
+
+  // For debugging
+  print() {
+    const pad = (level) => {
+      let s = '';
+      for (let i = 0; i < level; ++i) {
+        s += '  ';
+      }
+      return s;
+    };
+
+    const trim = (s, maxLen, trimFromRight)  => {
+      if (s.length > maxLen) {
+        if (trimFromRight) {
+          s = '... ' + s.substring(s.length - maxLen + 4);
+        } else {
+          s = s.substring(0, maxLen - 4) + ' ...';
+        }
+      }
+      return s;
+    };
+
+    let t = '';
+
+    this.walk((node, level) => {
+      t += pad(level) + '- [n] ';
+      t += String(node.tags);
+      t += '\n';
+      for (let anno of node.annotations) {
+        t += pad(level + 1) + '- [a] ';
+        let bodyText = Anno(anno).bodyText || '';
+        t += trim(bodyText, 60) + '\n';
+        let layerId = anno.layerId || '';
+        t += pad(level + 1) + '      ' + trim(layerId, 60, true) + '\n';
+      }
+    });
+
+    console.log('TOC:\n' + t);
+  }
 }
