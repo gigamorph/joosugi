@@ -1,4 +1,4 @@
-// joosugi v0.3.0-4-gf730fd8 built Wed Aug 30 2017 14:49:50 GMT-0400 (EDT)
+// joosugi v0.3.1-0-g0e84bf6 built Wed Sep 06 2017 10:51:38 GMT-0400 (EDT)
 
 
 /******/ (function(modules) { // webpackBootstrap
@@ -550,6 +550,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _annotationWrapper = __webpack_require__(0);
@@ -618,7 +620,8 @@ var AnnotationToc = function () {
        *   canvasAnnotations: [], // annotations that targets a canvas directly
        *   tags: [], // tags for this node
        *   childNodes: AN_OBJECT, // child TOC nodes as a hashmap on tags
-       *   isRoot: A_BOOL // true if the node is the root
+       *   isRoot: A_BOOL, // true if the node is the root
+       *   isDummy: A_BOOL  // true if the node is just a placeholder for reaching the next level of depth
        * }
        */
     } catch (err) {
@@ -828,11 +831,11 @@ var AnnotationToc = function () {
   }, {
     key: 'walk',
     value: function walk(visitCallback) {
-      this._visit(this._root, visitCallback);
+      this._visit(this._root, visitCallback, 0);
     }
   }, {
     key: '_visit',
-    value: function _visit(node, callback) {
+    value: function _visit(node, callback, level) {
       var sortedNodes = Object.values(node.childNodes).sort(function (n0, n1) {
         return n0.weight - n1.weight;
       });
@@ -845,9 +848,9 @@ var AnnotationToc = function () {
         for (var _iterator5 = sortedNodes[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
           var childNode = _step5.value;
 
-          var stop = callback(childNode);
+          var stop = callback(childNode, level);
           if (!stop) {
-            this._visit(childNode, callback);
+            this._visit(childNode, callback, level + 1);
           }
         }
       } catch (err) {
@@ -971,12 +974,15 @@ var AnnotationToc = function () {
         }
       }
 
-      var tag = this._getTagForLevel(tags, rowIndex);
+      var _getTagForLevel2 = this._getTagForLevel(tags, rowIndex),
+          _getTagForLevel3 = _slicedToArray(_getTagForLevel2, 2),
+          tag = _getTagForLevel3[0],
+          isDummy = _getTagForLevel3[1];
 
       if (tag) {
         // one of the tags belongs to the corresponding level of tag hierarchy
         if (!parent.childNodes[tag]) {
-          parent.childNodes[tag] = this._newNode(tag, parent);
+          parent.childNodes[tag] = this._newNode(tag, parent, isDummy);
         }
         currentNode = parent.childNodes[tag];
 
@@ -1015,8 +1021,10 @@ var AnnotationToc = function () {
         for (var _iterator7 = tags[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
           var tag = _step7.value;
 
-          if (tag.match('^' + prefix + '\\d+$')) {
-            return tag;
+          var match = tag.match('^' + prefix + '(\\d+)$');
+          if (match) {
+            var isDummy = match[1] === '0';
+            return [tag, isDummy];
           }
         }
       } catch (err) {
@@ -1034,7 +1042,7 @@ var AnnotationToc = function () {
         }
       }
 
-      return null;
+      return [null, null];
     }
   }, {
     key: '_extractTagNumber',
@@ -1044,13 +1052,14 @@ var AnnotationToc = function () {
 
     /**
      *
-     * @param {*} tag
-     * @param {*} parent parent node
+     * @param {string} tag
+     * @param {object} parent parent node
+     * @param {boolean} isDummy true if a placeholder node
      */
 
   }, {
     key: '_newNode',
-    value: function _newNode(tag, parent) {
+    value: function _newNode(tag, parent, isDummy) {
       if (!parent) {
         // root node
         return {
@@ -1066,7 +1075,8 @@ var AnnotationToc = function () {
           tags: tags,
           label: '',
           childNodes: {},
-          weight: 0 // to define order among nodes at the same level
+          weight: 0, // to define order among nodes at the same level
+          isDummy: isDummy
         };
       }
     }
