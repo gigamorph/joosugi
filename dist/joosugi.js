@@ -1,4 +1,4 @@
-// joosugi v0.3.1-0-g0e84bf6 built Wed Sep 06 2017 10:51:38 GMT-0400 (EDT)
+// joosugi v0.3.1-3-ge580d31 built Mon Sep 18 2017 10:44:23 GMT-0400 (EDT)
 
 
 /******/ (function(modules) { // webpackBootstrap
@@ -270,6 +270,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var _annotationWrapper = __webpack_require__(0);
 
 var _annotationWrapper2 = _interopRequireDefault(_annotationWrapper);
@@ -322,6 +324,21 @@ exports.default = {
 
     return false;
   },
+
+  findAnnotationFromListById: function findAnnotationFromListById(annotationId, annotations) {
+    var matched = annotations.filter(function (anno) {
+      if (!anno || (typeof anno === 'undefined' ? 'undefined' : _typeof(anno)) !== 'object') {
+        logger.error('AnnotationUtil#findAnnotationFromListById invalid annotation', anno);
+        return false;
+      }
+      return anno['@id'] === annotationId;
+    });
+    if (matched.length > 1) {
+      logger.error('AnnotationUtil#findAnnotationFromListById duplicate IDs', matched);
+    }
+    return matched[0];
+  },
+
 
   // For an annotation that targets other annotation(s), follow the
   // "on" relations recursively until no more targets are found.
@@ -1079,6 +1096,69 @@ var AnnotationToc = function () {
           isDummy: isDummy
         };
       }
+    }
+
+    // For debugging
+
+  }, {
+    key: 'print',
+    value: function print() {
+      var pad = function pad(level) {
+        var s = '';
+        for (var i = 0; i < level; ++i) {
+          s += '  ';
+        }
+        return s;
+      };
+
+      var trim = function trim(s, maxLen, trimFromRight) {
+        if (s.length > maxLen) {
+          if (trimFromRight) {
+            s = '... ' + s.substring(s.length - maxLen + 4);
+          } else {
+            s = s.substring(0, maxLen - 4) + ' ...';
+          }
+        }
+        return s;
+      };
+
+      var t = '';
+
+      this.walk(function (node, level) {
+        t += pad(level) + '- [n] ';
+        t += String(node.tags);
+        t += '\n';
+        var _iteratorNormalCompletion8 = true;
+        var _didIteratorError8 = false;
+        var _iteratorError8 = undefined;
+
+        try {
+          for (var _iterator8 = node.annotations[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
+            var anno = _step8.value;
+
+            t += pad(level + 1) + '- [a] ';
+            var bodyText = (0, _annotationWrapper2.default)(anno).bodyText || '';
+            t += trim(bodyText, 60) + '\n';
+            var layerId = anno.layerId || '';
+            t += pad(level + 1) + '      ' + trim(layerId, 60, true) + '\n';
+          }
+        } catch (err) {
+          _didIteratorError8 = true;
+          _iteratorError8 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion8 && _iterator8.return) {
+              _iterator8.return();
+            }
+          } finally {
+            if (_didIteratorError8) {
+              throw _iteratorError8;
+            }
+          }
+        }
+      });
+
+      console.log('TOC:\n' + t);
     }
   }]);
 

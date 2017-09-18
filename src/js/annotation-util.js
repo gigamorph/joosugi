@@ -25,6 +25,20 @@ export default {
     return false;
   },
 
+  findAnnotationFromListById(annotationId, annotations) {
+    const matched = annotations.filter(anno => {
+      if (!anno || typeof anno !== 'object') {
+        logger.error('AnnotationUtil#findAnnotationFromListById invalid annotation', anno);
+        return false;
+      }
+      return anno['@id'] === annotationId;
+    });
+    if (matched.length > 1) {
+      logger.error('AnnotationUtil#findAnnotationFromListById duplicate IDs', matched);
+    }
+    return matched[0];
+  },
+
   // For an annotation that targets other annotation(s), follow the
   // "on" relations recursively until no more targets are found.
   findTransitiveTargetAnnotations: function(annotation, annotationMap) {
