@@ -1,4 +1,4 @@
-// joosugi v0.3.1-3-ge580d31 built Mon Sep 18 2017 10:44:23 GMT-0400 (EDT)
+// joosugi v0.3.2-0-g083be34 built Sun Nov 05 2017 22:37:25 GMT-0500 (EST)
 
 
 /******/ (function(modules) { // webpackBootstrap
