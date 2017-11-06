@@ -1,6 +1,6 @@
 {
   "name": "joosugi",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A IIIF annotation explorer",
   "scripts": {
     "test": "karma start --singleRun",
